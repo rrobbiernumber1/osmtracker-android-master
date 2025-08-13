@@ -249,7 +249,7 @@ class TrackLogger : Activity() {
 				i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
 				startActivity(i)
 			}
-			R.id.tracklogger_menu_about -> startActivity(Intent(this, About::class.java))
+			// About 기능 제거됨
 			R.id.tracklogger_menu_displaytrack -> {
 				val useOpenStreetMapBackground = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
 					OSMTracker.Preferences.KEY_UI_DISPLAYTRACK_OSM, OSMTracker.Preferences.VAL_UI_DISPLAYTRACK_OSM

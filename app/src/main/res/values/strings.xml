@@ -107,7 +107,7 @@
     <!-- Menu -->
     <string name="menu_settings">Settings</string>
     <string name="menu_waypointlist">Waypoints</string>
-    <string name="menu_about">About</string>
+    <!-- About removed -->
     <string name="menu_displaytrack">Display track</string>
     <string name="menu_stoptracking">Stop &amp; save</string>
     <string name="menu_newtrack">New track</string>
@@ -142,13 +142,7 @@
     <string name="gpx_hdop_approximation_cmt">Warning: HDOP values aren\'t the HDOP as returned by the GPS device. They\'re approximated from the location accuracy in meters.</string>
 
     <!-- About screen -->
-    <string name="about">About</string>
-    <string name="about_text">For more information, docs and issue report, please visit the project home page:</string>
-    <string name="about_translate_text">Help translating OSMTracker:</string>
-    <string name="about_debug_info">Debug info</string>
-    <string name="about_export_db">Export database</string>
-    <string name="about_exporting_db">Exporting database&#8230;</string>
-    <string name="about_export_db_result">Database export result: %s</string>
+    <!-- About strings removed -->
 
     <!-- Notification -->
     <string name="notification_ticker_text">OSMTracker is tracking</string>

@@ -2,7 +2,7 @@ package net.osmtracker.db
 
 import android.os.AsyncTask
 import android.os.Bundle
-import net.osmtracker.activity.About
+import android.content.Context
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -11,7 +11,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.zip.GZIPOutputStream
 
-class ExportDatabaseTask(private val activity: About, private val targetFolder: File) : AsyncTask<File, Float, String>() {
+class ExportDatabaseTask(private val context: Context, private val targetFolder: File) : AsyncTask<File, Float, String>() {
 
 	companion object {
 		private const val BUF_SIZE = 16 * 1024
@@ -45,17 +45,10 @@ class ExportDatabaseTask(private val activity: About, private val targetFolder: 
 		}
 	}
 
-    override fun onProgressUpdate(vararg values: Float?) {
-        activity.exportDbProgressDialog?.let { pd ->
-            pd.progress = Math.round(values[0]!! * 100)
-        }
-    }
+    override fun onProgressUpdate(vararg values: Float?) {}
 
 	override fun onPostExecute(result: String) {
-		val b = Bundle()
-		b.putString("result", result)
-		activity.removeDialog(About.DIALOG_EXPORT_DB)
-		activity.showDialog(About.DIALOG_EXPORT_DB_COMPLETED, b)
+        // About removed: previously showed result dialog; now no-op
 	}
 }
 

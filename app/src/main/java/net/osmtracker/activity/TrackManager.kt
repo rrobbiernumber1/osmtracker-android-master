@@ -166,7 +166,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_PERMISSIONS_EXPORT_ALL)
 			} else exportTracks(false)
 			R.id.trackmgr_menu_settings -> startActivity(Intent(this, Preferences::class.java))
-			R.id.trackmgr_menu_about -> startActivity(Intent(this, About::class.java))
+			// About 기능 제거됨
 		}
 		return super.onOptionsItemSelected(item)
 	}
