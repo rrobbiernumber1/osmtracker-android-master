@@ -10,10 +10,14 @@ object ThemeValidator {
 	@JvmStatic
 	fun getValidTheme(prefs: SharedPreferences, res: Resources): String {
 		var theme = prefs.getString(OSMTracker.Preferences.KEY_UI_THEME, OSMTracker.Preferences.VAL_UI_THEME)
-		val validThemes = res.getStringArray(R.array.prefs_theme_values).toList()
-		if (theme == null || !validThemes.contains(theme)) {
+		if (theme == null) theme = OSMTracker.Preferences.VAL_UI_THEME
+		val themesArray = try { res.getStringArray(R.array.prefs_theme_values) } catch (_: Exception) { null }
+		val validThemes = themesArray?.toList() ?: emptyList()
+		if (!validThemes.contains(theme)) {
 			theme = OSMTracker.Preferences.VAL_UI_THEME
-			prefs.edit().putString(OSMTracker.Preferences.KEY_UI_THEME, OSMTracker.Preferences.VAL_UI_THEME).commit()
+			val editor = prefs.edit()
+			editor.putString(OSMTracker.Preferences.KEY_UI_THEME, OSMTracker.Preferences.VAL_UI_THEME)
+			editor.commit()
 		}
 		return theme
 	}
