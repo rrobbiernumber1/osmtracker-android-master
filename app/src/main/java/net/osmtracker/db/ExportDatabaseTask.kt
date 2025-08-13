@@ -45,9 +45,11 @@ class ExportDatabaseTask(private val activity: About, private val targetFolder: 
 		}
 	}
 
-	override fun onProgressUpdate(vararg values: Float?) {
-		if (activity.exportDbProgressDialog != null) activity.exportDbProgressDialog.progress = Math.round(values[0]!! * 100)
-	}
+    override fun onProgressUpdate(vararg values: Float?) {
+        activity.exportDbProgressDialog?.let { pd ->
+            pd.progress = Math.round(values[0]!! * 100)
+        }
+    }
 
 	override fun onPostExecute(result: String) {
 		val b = Bundle()

@@ -87,7 +87,7 @@ class GpsStatusRecord(context: Context, attrs: AttributeSet?) : LinearLayout(con
 				gpsActive = true
 				act.onGpsEnabled()
 				manageRecordingIndicator(true)
-			} else if (gpsActive && !act.buttonsEnabled) {
+			} else if (gpsActive && !(act.getButtonsEnabled())) {
 				act.onGpsEnabled()
 				manageRecordingIndicator(true)
 			}
