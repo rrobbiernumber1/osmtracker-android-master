@@ -353,13 +353,14 @@ public class TrackManager extends AppCompatActivity
 		}
 
 		// Invoke the Async Task
-		new ExportToStorageTask(this, trackIds) {
+        new ExportToStorageTask(this, trackIds) {
 			@Override
 			protected void onPostExecute(Boolean success) {
-				dialog.dismiss();
+                // dialog is a protected Kotlin field; in Java it's accessible as a getter
+                if (getExportDialog() != null) getExportDialog().dismiss();
 				if (!success) {
-					new AlertDialog.Builder(context).setTitle(android.R.string.dialog_alert_title)
-							.setMessage(context.getResources()
+                    new AlertDialog.Builder(TrackManager.this).setTitle(android.R.string.dialog_alert_title)
+                            .setMessage(TrackManager.this.getResources()
 									.getString(R.string.trackmgr_export_error)
 									.replace("{0}", super.getErrorMsg()))
 							.setIcon(android.R.drawable.ic_dialog_alert)
@@ -579,7 +580,7 @@ public class TrackManager extends AppCompatActivity
 	// That's why the Context is passed as a parameter
 	private static void prepareAndShareTrack(final long trackId, Context context) {
 		// Create temp file that will remain in cache
-		new ExportToTempFileTask(context, trackId){
+        new ExportToTempFileTask(context, trackId){
 			@Override
 			protected void executionCompleted(){
 				// Creates a zip file with the trace and its multimedia files
@@ -589,7 +590,7 @@ public class TrackManager extends AppCompatActivity
 
 			@Override
 			protected void onPostExecute(Boolean success) {
-				dialog.dismiss();
+                if (getExportDialog() != null) getExportDialog().dismiss();
 				if (!success) {
 					new AlertDialog.Builder(context)
 							.setTitle(android.R.string.dialog_alert_title)
