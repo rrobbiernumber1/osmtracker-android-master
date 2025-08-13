@@ -27,7 +27,7 @@ public class ExportToStorageTask extends ExportTrackTask {
 	private static final String TAG = ExportToStorageTask.class.getSimpleName();
 	private final String ERROR_MESSAGE;
 	private final DataHelper dataHelper;
-	private final SharedPreferences sharedPreferences;
+	private SharedPreferences sharedPreferences;
 
 	/**
 	 * Constructor for ExportToStorageTask.
@@ -49,8 +49,7 @@ public class ExportToStorageTask extends ExportTrackTask {
 	public ExportToStorageTask(Context context, DataHelper dataHelper, long... trackId) {
 		super(context, trackId);
 		this.dataHelper = dataHelper;
-		this.sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-		ERROR_MESSAGE = context.getString(R.string.error_create_track_dir);
+		ERROR_MESSAGE = context.getResources().getString(R.string.error_create_track_dir);
 	}
 
 	/**
@@ -103,6 +102,7 @@ public class ExportToStorageTask extends ExportTrackTask {
 	 * @return true if a separate directory should be created for each track, false otherwise
 	 */
     public boolean shouldCreateDirectoryPerTrack(){
+		ensurePrefs();
 	    return sharedPreferences.getBoolean(OSMTracker.Preferences.KEY_OUTPUT_DIR_PER_TRACK,
                 OSMTracker.Preferences.VAL_OUTPUT_GPX_OUTPUT_DIR_PER_TRACK);
     }
@@ -129,8 +129,10 @@ public class ExportToStorageTask extends ExportTrackTask {
 			throw new ExportTrackException(
 					context.getResources().getString(R.string.error_externalstorage_not_writable));
 		}
+		ensurePrefs();
 		String exportDirectoryNameInPreferences = sharedPreferences.getString(
-				OSMTracker.Preferences.KEY_STORAGE_DIR,	OSMTracker.Preferences.VAL_STORAGE_DIR);
+				OSMTracker.Preferences.KEY_STORAGE_DIR,
+				OSMTracker.Preferences.VAL_STORAGE_DIR);
 		Log.d(TAG,"exportDirectoryNameInPreferences: " + exportDirectoryNameInPreferences);
 
 		File baseExportDirectory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
@@ -147,6 +149,12 @@ public class ExportToStorageTask extends ExportTrackTask {
 
 		Log.d(TAG, "BaseExportDirectory: " + baseExportDirectory.getAbsolutePath());
 		return baseExportDirectory;
+	}
+
+	private void ensurePrefs() {
+		if (sharedPreferences == null) {
+			sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+		}
 	}
 
 	@Override
