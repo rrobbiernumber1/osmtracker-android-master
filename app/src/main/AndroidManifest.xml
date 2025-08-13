@@ -32,9 +32,7 @@
             android:name="org.apache.http.legacy"
             android:required="false" />
 
-        <activity android:name="net.osmtracker.activity.Intro"
-            android:label="@string/app_intro"
-            android:theme="@style/AppIntroStyle"/>
+        <!-- Intro activity removed -->
         <activity
             android:name=".activity.TrackManager"
             android:theme="@style/AppTheme"

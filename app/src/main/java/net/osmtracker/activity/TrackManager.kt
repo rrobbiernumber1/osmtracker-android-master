@@ -74,12 +74,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		}
 		val fab = findViewById<FloatingActionButton>(R.id.trackmgr_fab)
 		fab.setOnClickListener { startTrackLoggerForNewTrack() }
-		val showAppIntro = PreferenceManager.getDefaultSharedPreferences(this)
-			.getBoolean(OSMTracker.Preferences.KEY_DISPLAY_APP_INTRO, OSMTracker.Preferences.VAL_DISPLAY_APP_INTRO)
-		if (showAppIntro) {
-			val intro = Intent(this, Intro::class.java)
-			startActivity(intro)
-		}
+		// Intro 기능 제거됨
 		val recyclerView = findViewById<RecyclerView>(R.id.recyclerview)
 		recyclerView.layoutManager = LinearLayoutManager(this)
 		val dividerItemDecoration = DividerItemDecoration(recyclerView.context, DividerItemDecoration.VERTICAL)

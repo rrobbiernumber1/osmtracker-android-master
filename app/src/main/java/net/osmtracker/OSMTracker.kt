@@ -32,7 +32,7 @@ object OSMTracker {
 		const val KEY_GITHUB_USERNAME = "github_username"
 		const val KEY_REPOSITORY_NAME = "repository_name"
 		const val KEY_BRANCH_NAME = "branch_name"
-		const val KEY_DISPLAY_APP_INTRO = "app.intro"
+		// Intro removed: KEY_DISPLAY_APP_INTRO no longer used
 
 		const val VAL_STORAGE_DIR = "/osmtracker"
 		const val VAL_VOICEREC_DURATION = "2"
@@ -83,7 +83,7 @@ object OSMTracker {
 		const val VAL_REPOSITORY_NAME = "osmtracker-android-layouts"
 		const val VAL_BRANCH_NAME = "master"
 
-		const val VAL_DISPLAY_APP_INTRO = true
+		// Intro removed: VAL_DISPLAY_APP_INTRO no longer used
 	}
 
 	const val PACKAGE_NAME: String = "net.osmtracker"
