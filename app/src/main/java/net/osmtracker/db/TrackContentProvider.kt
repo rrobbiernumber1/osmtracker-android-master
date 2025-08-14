@@ -27,11 +27,11 @@ open class TrackContentProvider : ContentProvider() {
 				Schema.COL_ACTIVE,
 				Schema.COL_DIR,
 				Schema.COL_EXPORT_DATE,
-				Schema.COL_OSM_UPLOAD_DATE,
+                
 				Schema.TBL_TRACK + "." + Schema.COL_NAME + " as " + Schema.COL_NAME,
 				Schema.COL_DESCRIPTION,
 				Schema.COL_TAGS,
-				Schema.COL_OSM_VISIBILITY,
+                Schema.COL_OSM_VISIBILITY,
 				Schema.COL_START_DATE,
 				"count(" + Schema.TBL_TRACKPOINT + "." + Schema.COL_ID + ") as " + Schema.COL_TRACKPOINT_COUNT,
 				"(SELECT count(" + Schema.TBL_WAYPOINT + "." + Schema.COL_TRACK_ID + ") FROM " + Schema.TBL_WAYPOINT + " WHERE " + Schema.TBL_WAYPOINT + "." + Schema.COL_TRACK_ID + " = " + Schema.TBL_TRACK + "." + Schema.COL_ID + ") as " + Schema.COL_WAYPOINT_COUNT
@@ -257,7 +257,8 @@ open class TrackContentProvider : ContentProvider() {
 			@Deprecated("deprecated") const val COL_DIR = "directory"
 			const val COL_ACTIVE = "active"
 			const val COL_EXPORT_DATE = "export_date"
-			const val COL_OSM_UPLOAD_DATE = "osm_upload_date"
+            // OSM 업로드 일자 컬럼은 더 이상 사용하지 않음 (DB 스키마 호환을 위해 유지)
+            const val COL_OSM_UPLOAD_DATE = "osm_upload_date"
 			const val COL_COMPASS = "compass_heading"
 			const val COL_COMPASS_ACCURACY = "compass_accuracy"
 			const val COL_ATMOSPHERIC_PRESSURE = "atmospheric_pressure"

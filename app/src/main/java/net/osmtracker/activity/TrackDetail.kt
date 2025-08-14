@@ -96,14 +96,7 @@ class TrackDetail : TrackDetailEditor(), AdapterView.OnItemClickListener {
 		map[ITEM_KEY] = resources.getString(R.string.trackdetail_endloc)
         map[ITEM_VALUE] = MercatorProjection.formatDegreesAsDMS(t.getEndLat(), true) + "  " + MercatorProjection.formatDegreesAsDMS(t.getEndLong(), false)
 		data.add(map)
-		map = HashMap()
-		map[ITEM_KEY] = resources.getString(R.string.trackdetail_osm_upload_date)
-		if (cursor.isNull(cursor.getColumnIndex(TrackContentProvider.Schema.COL_OSM_UPLOAD_DATE))) {
-			map[ITEM_VALUE] = resources.getString(R.string.trackdetail_osm_upload_notyet)
-		} else {
-			map[ITEM_VALUE] = DateFormat.getDateTimeInstance().format(Date(cursor.getLong(cursor.getColumnIndex(TrackContentProvider.Schema.COL_OSM_UPLOAD_DATE))))
-		}
-		data.add(map)
+        // OSM 업로드 정보 제거됨
 		map = HashMap()
 		map[ITEM_KEY] = resources.getString(R.string.trackdetail_exportdate)
 		if (cursor.isNull(cursor.getColumnIndex(TrackContentProvider.Schema.COL_EXPORT_DATE))) {
@@ -113,7 +106,7 @@ class TrackDetail : TrackDetailEditor(), AdapterView.OnItemClickListener {
 		}
 		data.add(map)
 		cursor.close()
-		val adapter = TrackDetailSimpleAdapter(data, from, to)
+        val adapter = TrackDetailSimpleAdapter(data, from, to)
 		lv.adapter = adapter
 		lv.onItemClickListener = this
 	}
@@ -137,12 +130,7 @@ class TrackDetail : TrackDetailEditor(), AdapterView.OnItemClickListener {
 				i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
 				startActivity(i)
 			}
-			R.id.trackdetail_menu_export -> if (writeExternalStoragePermissionGranted()) { exportTrack() }
-			R.id.trackdetail_menu_osm_upload -> {
-				val i = Intent(this, OpenStreetMapUpload::class.java)
-				i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
-				startActivity(i)
-			}
+            R.id.trackdetail_menu_export -> if (writeExternalStoragePermissionGranted()) { exportTrack() }
 		}
 		return super.onOptionsItemSelected(item)
 	}

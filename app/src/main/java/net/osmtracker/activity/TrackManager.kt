@@ -46,7 +46,6 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 
 	private val TAG = TrackManager::class.java.simpleName
 
-	private val RC_WRITE_PERMISSIONS_UPLOAD = 4
 	private val RC_WRITE_STORAGE_DISPLAY_TRACK = 3
 	private val RC_WRITE_PERMISSIONS_EXPORT_ALL = 1
 	private val RC_WRITE_PERMISSIONS_EXPORT_ONE = 2
@@ -268,13 +267,9 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				Log.e(TAG, "ExportAsGPXWrite - Permission asked")
 				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_PERMISSIONS_EXPORT_ONE)
 			}
-			R.id.trackmgr_contextmenu_share -> if (writeExternalStoragePermissionGranted()) { prepareAndShareTrack(contextMenuSelectedTrackid, this) } else {
+            R.id.trackmgr_contextmenu_share -> if (writeExternalStoragePermissionGranted()) { prepareAndShareTrack(contextMenuSelectedTrackid, this) } else {
 				Log.e(TAG, "Share GPX - Permission asked")
 				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_PERMISSIONS_SHARE)
-			}
-			R.id.trackmgr_contextmenu_osm_upload -> if (writeExternalStoragePermissionGranted()) { uploadTrack(contextMenuSelectedTrackid) } else {
-				Log.e(TAG, "OsmUploadWrite - Permission asked")
-				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_PERMISSIONS_UPLOAD)
 			}
 			R.id.trackmgr_contextmenu_display -> if (writeExternalStoragePermissionGranted()) { displayTrack(contextMenuSelectedTrackid) } else {
 				Log.e(TAG, "DisplayTrackMapWrite - Permission asked")
@@ -289,11 +284,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		return super.onContextItemSelected(item)
 	}
 
-	private fun uploadTrack(trackId: Long) {
-		val i = Intent(this, OpenStreetMapUpload::class.java)
-		i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
-		startActivity(i)
-	}
+    
 
 	private fun displayTrack(trackId: Long) {
 		Log.e(TAG, "On Display Track")
@@ -435,13 +426,9 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				Log.w(TAG, "Permission not granted")
 				Toast.makeText(this, R.string.storage_permission_for_display_track, Toast.LENGTH_LONG).show()
 			}
-			RC_WRITE_PERMISSIONS_SHARE -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { Log.e(TAG, "Result - Permission granted"); displayTrack(contextMenuSelectedTrackid); prepareAndShareTrack(contextMenuSelectedTrackid, this) } else {
+            RC_WRITE_PERMISSIONS_SHARE -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { Log.e(TAG, "Result - Permission granted"); displayTrack(contextMenuSelectedTrackid); prepareAndShareTrack(contextMenuSelectedTrackid, this) } else {
 				Log.w(TAG, "Permission not granted")
 				Toast.makeText(this, R.string.storage_permission_for_share_track, Toast.LENGTH_LONG).show()
-			}
-			RC_WRITE_PERMISSIONS_UPLOAD -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { Log.e(TAG, "Result - Permission granted"); uploadTrack(contextMenuSelectedTrackid) } else {
-				Log.w(TAG, "Permission not granted")
-				Toast.makeText(this, R.string.storage_permission_for_upload_to_OSM, Toast.LENGTH_LONG).show()
 			}
 			RC_GPS_PERMISSION -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { Log.i(TAG, "GPS Permission granted"); tryStartTrackLogger(this.TrackLoggerStartIntent!!) } else { Log.i(TAG, "GPS Permission denied") }
 		}

@@ -33,8 +33,7 @@ class TrackListRVAdapter(
 		private val vNameOrStartDate: TextView = view.findViewById(R.id.trackmgr_item_nameordate)
 		private val vWps: TextView = view.findViewById(R.id.trackmgr_item_wps)
 		private val vTps: TextView = view.findViewById(R.id.trackmgr_item_tps)
-		private val vStatus: ImageView = view.findViewById(R.id.trackmgr_item_statusicon)
-		private val vUploadStatus: ImageView = view.findViewById(R.id.trackmgr_item_upload_statusicon)
+        private val vStatus: ImageView = view.findViewById(R.id.trackmgr_item_statusicon)
 
 		init {
 			view.setOnClickListener(this)
@@ -46,7 +45,7 @@ class TrackListRVAdapter(
 		fun getvWps(): TextView { return vWps }
 		fun getvTps(): TextView { return vTps }
 		fun getvStatus(): ImageView { return vStatus }
-		fun getvUploadStatus(): ImageView { return vUploadStatus }
+        
 
 		override fun onClick(v: View) {
 			val trackId = java.lang.Long.parseLong(getvId().text.toString())

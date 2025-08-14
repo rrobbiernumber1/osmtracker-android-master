@@ -54,12 +54,7 @@ open class DataHelper(private val context: Context) {
 			values.put(TrackContentProvider.Schema.COL_EXPORT_DATE, exportTime)
 			cr.update(trackUri, values, null, null)
 		}
-		@JvmStatic fun setTrackUploadDate(trackId: Long, uploadTime: Long, cr: ContentResolver) {
-			val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)
-			val values = ContentValues()
-			values.put(TrackContentProvider.Schema.COL_OSM_UPLOAD_DATE, uploadTime)
-			cr.update(trackUri, values, null, null)
-		}
+        // OSM 업로드 일자 설정은 더 이상 사용하지 않음
 		@JvmStatic fun getTrackDirFromDB(cr: ContentResolver, trackId: Long): File? {
 			var trackDir: File? = null
 			var c = cr.query(ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId), null, null, null, null)

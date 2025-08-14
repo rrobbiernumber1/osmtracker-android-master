@@ -101,15 +101,7 @@ class Preferences : PreferenceActivity() {
 			preference.summary = newPreferenceDisplayValue + ".\n" + resources.getString(R.string.prefs_ui_orientation_summary)
 			true
 		}
-		val clearOSMPref: Preference = findPreference(OSMTracker.Preferences.KEY_OSM_OAUTH_CLEAR_DATA)
-		if (prefs.contains(OSMTracker.Preferences.KEY_OSM_OAUTH2_ACCESSTOKEN)) clearOSMPref.isEnabled = true else clearOSMPref.isEnabled = false
-		clearOSMPref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference, _ ->
-			val editor: Editor = prefs.edit()
-			editor.remove(OSMTracker.Preferences.KEY_OSM_OAUTH2_ACCESSTOKEN)
-			editor.commit()
-			preference.isEnabled = false
-			false
-		}
+        // OSM 인증 초기화 옵션 제거됨
 	}
 }
 

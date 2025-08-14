@@ -27,7 +27,6 @@ class TracklistAdapter(context: Context, c: Cursor) : CursorAdapter(context, c) 
 		val vWps = v.findViewById<TextView>(R.id.trackmgr_item_wps)
 		val vTps = v.findViewById<TextView>(R.id.trackmgr_item_tps)
 		val vStatus = v.findViewById<ImageView>(R.id.trackmgr_item_statusicon)
-		val vUploadStatus = v.findViewById<ImageView>(R.id.trackmgr_item_upload_statusicon)
 		val active = cursor.getInt(cursor.getColumnIndex(TrackContentProvider.Schema.COL_ACTIVE))
 		if (TrackContentProvider.Schema.VAL_TRACK_ACTIVE == active) {
 			vStatus.setImageResource(android.R.drawable.presence_away)
@@ -38,12 +37,7 @@ class TracklistAdapter(context: Context, c: Cursor) : CursorAdapter(context, c) 
 			vStatus.setImageResource(android.R.drawable.presence_online)
 			vStatus.visibility = View.VISIBLE
 		}
-		if (cursor.isNull(cursor.getColumnIndex(TrackContentProvider.Schema.COL_OSM_UPLOAD_DATE))) {
-			vUploadStatus.visibility = View.GONE
-		} else {
-			vUploadStatus.setImageResource(android.R.drawable.stat_sys_upload_done)
-			vUploadStatus.visibility = View.VISIBLE
-		}
+        // OSM 업로드 상태 표시 제거됨
 		val trackId = cursor.getLong(cursor.getColumnIndex(TrackContentProvider.Schema.COL_ID))
 		val strTrackId = java.lang.Long.toString(trackId)
 		vId.text = strTrackId

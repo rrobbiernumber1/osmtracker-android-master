@@ -27,8 +27,7 @@ object OSMTracker {
 		const val KEY_UI_MAP_TILE = "ui.map.tile"
 		const val KEY_SOUND_ENABLED = "sound_enabled"
 		const val KEY_UI_ORIENTATION = "ui.orientation"
-		const val KEY_OSM_OAUTH2_ACCESSTOKEN = "osm.oauth2.accesstoken"
-		const val KEY_OSM_OAUTH_CLEAR_DATA = "osm.oauth.clear-data"
+        // OSM 업로드 제거됨: 인증 키 미사용
 		const val KEY_GITHUB_USERNAME = "github_username"
 		const val KEY_REPOSITORY_NAME = "repository_name"
 		const val KEY_BRANCH_NAME = "branch_name"
