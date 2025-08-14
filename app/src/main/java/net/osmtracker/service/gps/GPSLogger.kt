@@ -24,7 +24,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import net.osmtracker.OSMTracker
 import net.osmtracker.R
-import net.osmtracker.activity.TrackLogger
+import net.osmtracker.activity.TrackManager
 import net.osmtracker.db.DataHelper
 import net.osmtracker.db.TrackContentProvider
 import net.osmtracker.listener.PressureListener
@@ -64,7 +64,7 @@ class GPSLogger : Service(), LocationListener {
 								val link = extras.getString(OSMTracker.INTENT_KEY_LINK)
 
 								dataHelper.wayPoint(trackId, loc, name ?: "", link, uuid, sensorListener.getAzimuth(), sensorListener.getAccuracy(), pressureListener.getPressure())
-								dataHelper.track(currentTrackId, loc, sensorListener.getAzimuth(), sensorListener.getAccuracy(), pressureListener.getPressure())
+								dataHelper.track(trackId, loc, sensorListener.getAzimuth(), sensorListener.getAccuracy(), pressureListener.getPressure())
 							}
 						}
 					}
@@ -210,9 +210,9 @@ class GPSLogger : Service(), LocationListener {
 
 	private val notification: Notification
 		get() {
-			val startTrackLogger = Intent(this, TrackLogger::class.java)
-			startTrackLogger.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
-			val contentIntent = PendingIntent.getActivity(this, 0, startTrackLogger, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+			val startTrackManager = Intent(this, TrackManager::class.java)
+			startTrackManager.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
+			val contentIntent = PendingIntent.getActivity(this, 0, startTrackManager, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 			val builder = NotificationCompat.Builder(this, CHANNEL_ID)
 				.setSmallIcon(R.drawable.ic_stat_track)
 				.setContentTitle(resources.getString(R.string.notification_title).replace("{0}", if (currentTrackId > -1) currentTrackId.toString() else "?"))

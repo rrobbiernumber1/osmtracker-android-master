@@ -20,14 +20,14 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import net.osmtracker.OSMTracker
 import net.osmtracker.R
-import net.osmtracker.activity.TrackLogger
+import net.osmtracker.activity.TrackManager
 import java.text.DecimalFormat
 
 class GpsStatusRecord(context: Context, attrs: AttributeSet?) : LinearLayout(context, attrs), LocationListener {
 
 	private val REQUEST_CODE_GPS_PERMISSIONS = 1
 	private val gpsLoggingInterval: Long
-	private var activity: TrackLogger? = null
+    private var activity: TrackManager? = null
 	private var lmgr: LocationManager? = null
 	private var lastGPSTimestampStatus: Long = 0
 	private var lastGPSTimestampLocation: Long = 0
@@ -40,7 +40,7 @@ class GpsStatusRecord(context: Context, attrs: AttributeSet?) : LinearLayout(con
 		gpsLoggingInterval = PreferenceManager.getDefaultSharedPreferences(context)
 			.getString(OSMTracker.Preferences.KEY_GPS_LOGGING_INTERVAL, OSMTracker.Preferences.VAL_GPS_LOGGING_INTERVAL)
 			?.toLong()?.times(1000) ?: 0L
-		if (context is TrackLogger) {
+        if (context is TrackManager) {
 			activity = context
 			lmgr = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 		}
@@ -49,14 +49,14 @@ class GpsStatusRecord(context: Context, attrs: AttributeSet?) : LinearLayout(con
 	}
 
 	fun requestLocationUpdates(request: Boolean) {
-		val act = activity ?: return
+        val act = activity ?: return
 		val mgr = lmgr ?: return
 		if (request) {
 			if (ContextCompat.checkSelfPermission(act, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 				mgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, this)
 				mgr.registerGnssStatusCallback(statusCallback)
 			} else {
-				ActivityCompat.requestPermissions(act, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_CODE_GPS_PERMISSIONS)
+                ActivityCompat.requestPermissions(act, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_CODE_GPS_PERMISSIONS)
 			}
 		} else {
 			mgr.removeUpdates(this)
@@ -82,15 +82,10 @@ class GpsStatusRecord(context: Context, attrs: AttributeSet?) : LinearLayout(con
 		if (lastGPSTimestampLocation + gpsLoggingInterval < System.currentTimeMillis()) {
 			lastGPSTimestampLocation = System.currentTimeMillis()
 			Log.v(TAG, "Location received $location")
-			val act = activity ?: return
-			if (!gpsActive) {
-				gpsActive = true
-				act.onGpsEnabled()
-				manageRecordingIndicator(true)
-			} else if (gpsActive && !(act.getButtonsEnabled())) {
-				act.onGpsEnabled()
-				manageRecordingIndicator(true)
-			}
+            if (!gpsActive) {
+                gpsActive = true
+                manageRecordingIndicator(true)
+            }
 			val tvAccuracy = findViewById<TextView>(R.id.gpsstatus_record_tvAccuracy)
 			if (location.hasAccuracy()) {
 				Log.d(TAG, "location accuracy: ${ACCURACY_FORMAT.format(location.accuracy)}")
@@ -112,7 +107,7 @@ class GpsStatusRecord(context: Context, attrs: AttributeSet?) : LinearLayout(con
 		gpsActive = false
 		findViewById<ImageView>(R.id.gpsstatus_record_imgSatIndicator).setImageResource(R.drawable.sat_indicator_off)
 		findViewById<TextView>(R.id.gpsstatus_record_tvAccuracy).text = ""
-		activity?.onGpsDisabled()
+        // no-op; activity callbacks removed
 	}
 
 	override fun onProviderEnabled(provider: String) {
@@ -129,7 +124,7 @@ class GpsStatusRecord(context: Context, attrs: AttributeSet?) : LinearLayout(con
 				imgSatIndicator.setImageResource(R.drawable.sat_indicator_off)
 				tvAccuracy.text = ""
 				gpsActive = false
-				activity?.onGpsDisabled()
+                // no-op; activity callbacks removed
 			}
 			LocationProvider.TEMPORARILY_UNAVAILABLE -> {
 				imgSatIndicator.setImageResource(R.drawable.sat_indicator_unknown)

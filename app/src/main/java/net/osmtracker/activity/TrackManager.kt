@@ -39,6 +39,7 @@ import net.osmtracker.gpx.ExportToStorageTask
 import net.osmtracker.gpx.ExportToTempFileTask
 import net.osmtracker.gpx.ZipHelper
 import net.osmtracker.util.FileSystemUtils
+import net.osmtracker.view.TextNoteDialog
 import java.io.File
 import java.util.Date
 
@@ -72,7 +73,9 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 			prevItemVisible = savedInstanceState.getInt(PREV_VISIBLE, -1)
 		}
 		val fab = findViewById<FloatingActionButton>(R.id.trackmgr_fab)
-		fab.setOnClickListener { startTrackLoggerForNewTrack() }
+		fab.setOnClickListener {
+			startNewTrack()
+		}
 		// Intro 기능 제거됨
 		val recyclerView = findViewById<RecyclerView>(R.id.recyclerview)
 		recyclerView.layoutManager = LinearLayoutManager(this)
@@ -80,22 +83,16 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		dividerItemDecoration.setDrawable(ContextCompat.getDrawable(this, R.drawable.divider)!!)
 		recyclerView.addItemDecoration(dividerItemDecoration)
 
-		// New: left-bottom FAB to add text waypoint to active track
+		// New: left-bottom FAB to add text waypoint to active track directly
 		findViewById<FloatingActionButton>(R.id.trackmgr_fab_text_wp).setOnClickListener {
 			currentTrackId = DataHelper.getActiveTrackId(contentResolver)
 			if (currentTrackId == TRACK_ID_NO_TRACK) {
 				Toast.makeText(this, R.string.trackmgr_empty, Toast.LENGTH_SHORT).show()
 				return@setOnClickListener
 			}
-			// Reuse existing flow: launch TrackLogger for current track and show text note dialog via intent extra handled in onResume
-			val i = Intent(this, TrackLogger::class.java)
-			i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
-			i.putExtra(TrackLogger.STATE_IS_TRACKING, true)
-			// Use category to signal immediate text note (TrackLogger will show dialog in onResume if present)
-			i.addCategory("OPEN_TEXT_NOTE")
-			tryStartTrackLogger(i)
+			openTextNoteDialogFor(currentTrackId)
 		}
-	}
+	 }
 
 	override fun onResume() {
 		setRecyclerView()
@@ -158,12 +155,13 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 
 	override fun onOptionsItemSelected(item: MenuItem): Boolean {
 		when (item.itemId) {
-			R.id.trackmgr_menu_newtrack -> startTrackLoggerForNewTrack()
+			R.id.trackmgr_menu_newtrack -> startNewTrack()
 			R.id.trackmgr_menu_continuetrack -> {
-				val i = Intent(this, TrackLogger::class.java)
-				i.putExtra(TrackLogger.STATE_IS_TRACKING, true)
-				i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
-				tryStartTrackLogger(i)
+				// resume tracking for current active track
+				val intent = Intent(OSMTracker.INTENT_START_TRACKING)
+				intent.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
+				intent.setPackage(this.packageName)
+				sendBroadcast(intent)
 			}
 			R.id.trackmgr_menu_stopcurrenttrack -> stopActiveTrack()
 			R.id.trackmgr_menu_deletetracks -> AlertDialog.Builder(this)
@@ -186,28 +184,15 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		return super.onOptionsItemSelected(item)
 	}
 
-	private fun tryStartTrackLogger(intent: Intent) {
-		if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-			Log.i(TAG, "Permission granted on try")
-			startActivity(intent)
-		} else {
-			Log.i(TAG, "Not Granted on try")
-			this.TrackLoggerStartIntent = intent
-			if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
-				Log.i(TAG, "Should explain")
-				Toast.makeText(this, R.string.gps_perms_required, Toast.LENGTH_LONG).show()
-			}
-			Log.i(TAG, "Should not explain")
-			ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), RC_GPS_PERMISSION)
-		}
-	}
+ 
 
-	private fun startTrackLoggerForNewTrack() {
+	private fun startNewTrack() {
 		try {
-			val i = Intent(this, TrackLogger::class.java)
 			currentTrackId = createNewTrack()
-			i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
-			tryStartTrackLogger(i)
+			val intent = Intent(OSMTracker.INTENT_START_TRACKING)
+			intent.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
+			intent.setPackage(this.packageName)
+			sendBroadcast(intent)
 		} catch (cte: CreateTrackException) {
 			Toast.makeText(this, resources.getString(R.string.trackmgr_newtrack_error).replace("{0}", cte.message ?: ""), Toast.LENGTH_LONG).show()
 		}
@@ -267,9 +252,10 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 			R.id.trackmgr_contextmenu_stop -> stopActiveTrack()
 			R.id.trackmgr_contextmenu_resume -> {
 				if (currentTrackId != contextMenuSelectedTrackid) { setActiveTrack(contextMenuSelectedTrackid) }
-				i = Intent(this, TrackLogger::class.java)
-				i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, contextMenuSelectedTrackid)
-				tryStartTrackLogger(i)
+				val intent = Intent(OSMTracker.INTENT_START_TRACKING)
+				intent.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, contextMenuSelectedTrackid)
+				intent.setPackage(this.packageName)
+				sendBroadcast(intent)
 			}
 			R.id.trackmgr_contextmenu_delete -> AlertDialog.Builder(this)
 				.setTitle(R.string.trackmgr_contextmenu_delete)
@@ -322,16 +308,9 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 
 	override fun onClick(trackId: Long) {
 		val i: Intent
-		if (trackId == currentTrackId) {
-			i = Intent(this, TrackLogger::class.java)
-			i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
-			i.putExtra(TrackLogger.STATE_IS_TRACKING, true)
-			tryStartTrackLogger(i)
-		} else {
-			i = Intent(this, TrackDetail::class.java)
-			i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
-			startActivity(i)
-		}
+		i = Intent(this, TrackDetail::class.java)
+		i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
+		startActivity(i)
 	}
 
 	@Throws(CreateTrackException::class)
@@ -444,8 +423,13 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				Log.w(TAG, "Permission not granted")
 				Toast.makeText(this, R.string.storage_permission_for_share_track, Toast.LENGTH_LONG).show()
 			}
-			RC_GPS_PERMISSION -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { Log.i(TAG, "GPS Permission granted"); tryStartTrackLogger(this.TrackLoggerStartIntent!!) } else { Log.i(TAG, "GPS Permission denied") }
+			// no-op for GPS permission related to launching TrackLogger (removed)
 		}
+	}
+
+	private fun openTextNoteDialogFor(trackId: Long) {
+		val dialog = TextNoteDialog(this, trackId)
+		dialog.show()
 	}
 }
 
