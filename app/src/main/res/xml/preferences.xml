@@ -4,12 +4,7 @@
     android:layout_height="match_parent"
     android:fillViewport="true">
 
-	<ListPreference
-		android:title="@string/prefs_voicerec_duration"
-		android:key="voicerec.duration"
-		android:entryValues="@array/prefs_voicerec_durations"
-		android:defaultValue="2"
-		android:entries="@array/prefs_voicerec_durations"/>
+	
 	<CheckBoxPreference
 		android:key="sound_enabled"
 		android:title="@string/prefs_sound_enabled"
@@ -104,9 +99,7 @@
 			android:key="ui.theme"
 			android:summary="@string/prefs_theme_summary"
 			android:defaultValue="@style/DefaultTheme" />
-		<PreferenceScreen android:key="prefs_ui_buttons_layout" android:title="@string/prefs_ui_buttons_layout" android:summary="@string/prefs_ui_buttons_layout_summary">
-			<intent android:action="launch_buttons_presets" />
-		</PreferenceScreen>
+		
 		<CheckBoxPreference
 			android:key="ui.displaytrack.osm"
 			android:title="@string/prefs_displaytrack_osm"

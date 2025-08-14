@@ -11,7 +11,7 @@
 
     <!-- Foreground services and network permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -65,15 +65,7 @@
         <activity
             android:name=".activity.DisplayTrackMap"
             android:label="@string/displaytrackmap" />
-        <activity android:name=".activity.ButtonsPresets"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="launch_buttons_presets" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-        <activity android:name=".activity.AvailableLayouts" />
+        
 
         <service
             android:name=".service.gps.GPSLogger"
@@ -89,12 +81,7 @@
             android:authorities="net.osmtracker.provider"
             android:exported="false" />
 
-        <receiver android:name=".receiver.MediaButtonReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.MEDIA_BUTTON" />
-            </intent-filter>
-        </receiver>
+        
 
         <provider
             android:name="androidx.core.content.FileProvider"

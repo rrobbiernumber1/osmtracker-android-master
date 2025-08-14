@@ -79,6 +79,22 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		val dividerItemDecoration = DividerItemDecoration(recyclerView.context, DividerItemDecoration.VERTICAL)
 		dividerItemDecoration.setDrawable(ContextCompat.getDrawable(this, R.drawable.divider)!!)
 		recyclerView.addItemDecoration(dividerItemDecoration)
+
+		// New: left-bottom FAB to add text waypoint to active track
+		findViewById<FloatingActionButton>(R.id.trackmgr_fab_text_wp).setOnClickListener {
+			currentTrackId = DataHelper.getActiveTrackId(contentResolver)
+			if (currentTrackId == TRACK_ID_NO_TRACK) {
+				Toast.makeText(this, R.string.trackmgr_empty, Toast.LENGTH_SHORT).show()
+				return@setOnClickListener
+			}
+			// Reuse existing flow: launch TrackLogger for current track and show text note dialog via intent extra handled in onResume
+			val i = Intent(this, TrackLogger::class.java)
+			i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
+			i.putExtra(TrackLogger.STATE_IS_TRACKING, true)
+			// Use category to signal immediate text note (TrackLogger will show dialog in onResume if present)
+			i.addCategory("OPEN_TEXT_NOTE")
+			tryStartTrackLogger(i)
+		}
 	}
 
 	override fun onResume() {
@@ -212,7 +228,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 			}
 			cursor?.close()
 		}
-        object : ExportToStorageTask(this@TrackManager, *trackIds!!) {
+		object : ExportToStorageTask(this@TrackManager, *trackIds!!) {
 			override fun onPostExecute(success: Boolean) {
 				if (getExportDialog() != null) getExportDialog()!!.dismiss()
 				if (!success) {
@@ -267,7 +283,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				Log.e(TAG, "ExportAsGPXWrite - Permission asked")
 				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_PERMISSIONS_EXPORT_ONE)
 			}
-            R.id.trackmgr_contextmenu_share -> if (writeExternalStoragePermissionGranted()) { prepareAndShareTrack(contextMenuSelectedTrackid, this) } else {
+			R.id.trackmgr_contextmenu_share -> if (writeExternalStoragePermissionGranted()) { prepareAndShareTrack(contextMenuSelectedTrackid, this) } else {
 				Log.e(TAG, "Share GPX - Permission asked")
 				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_PERMISSIONS_SHARE)
 			}
@@ -283,8 +299,6 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		}
 		return super.onContextItemSelected(item)
 	}
-
-    
 
 	private fun displayTrack(trackId: Long) {
 		Log.e(TAG, "On Display Track")
@@ -334,13 +348,13 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 	}
 
 	private fun prepareAndShareTrack(trackId: Long, context: Context) {
-        object : ExportToTempFileTask(context, trackId) {
+		object : ExportToTempFileTask(context, trackId) {
 			override fun executionCompleted() {
-                val tmp = this.getTmpFile()
-                val zipFile = ZipHelper.zipCacheFiles(context, trackId, tmp)
-                if (zipFile != null) {
-                    shareFile(zipFile, context)
-                }
+				val tmp = this.getTmpFile()
+				val zipFile = ZipHelper.zipCacheFiles(context, trackId, tmp)
+				if (zipFile != null) {
+					shareFile(zipFile, context)
+				}
 			}
 			override fun onPostExecute(success: Boolean) {
 				if (getExportDialog() != null) getExportDialog()!!.dismiss()
@@ -426,7 +440,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				Log.w(TAG, "Permission not granted")
 				Toast.makeText(this, R.string.storage_permission_for_display_track, Toast.LENGTH_LONG).show()
 			}
-            RC_WRITE_PERMISSIONS_SHARE -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { Log.e(TAG, "Result - Permission granted"); displayTrack(contextMenuSelectedTrackid); prepareAndShareTrack(contextMenuSelectedTrackid, this) } else {
+			RC_WRITE_PERMISSIONS_SHARE -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { Log.e(TAG, "Result - Permission granted"); displayTrack(contextMenuSelectedTrackid); prepareAndShareTrack(contextMenuSelectedTrackid, this) } else {
 				Log.w(TAG, "Permission not granted")
 				Toast.makeText(this, R.string.storage_permission_for_share_track, Toast.LENGTH_LONG).show()
 			}

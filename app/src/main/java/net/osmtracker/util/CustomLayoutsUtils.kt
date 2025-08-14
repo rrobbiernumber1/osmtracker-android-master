@@ -4,8 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
 import net.osmtracker.OSMTracker
-import net.osmtracker.activity.AvailableLayouts
-import net.osmtracker.activity.Preferences
+ 
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream
@@ -17,28 +16,16 @@ import java.nio.charset.StandardCharsets
 
 object CustomLayoutsUtils {
 	@JvmField
-	val LAYOUT_EXTENSION_ISO: String = "_xx.xml"
+    val LAYOUT_EXTENSION_ISO: String = "_xx.xml"
 
 	@JvmStatic
-	fun convertFileName(fileName: String): String {
-		var subname = fileName.replace(Preferences.LAYOUT_FILE_EXTENSION, "")
-		if (subname.matches(Regex("\\w+_.."))) {
-			subname = subname.substring(0, subname.length - (AvailableLayouts.ISO_CHARACTER_LENGTH + 1))
-		}
-		return subname.replace("_", " ")
-	}
+    fun convertFileName(fileName: String): String { return fileName }
 
 	@JvmStatic
-	fun unconvertFileName(representation: String): String {
-		return representation.replace(" ", "_") + Preferences.LAYOUT_FILE_EXTENSION
-	}
+    fun unconvertFileName(representation: String): String { return representation }
 
 	@JvmStatic
-	fun createFileName(layoutName: String, iso: String): String {
-		var fileName = layoutName.replace(" ", "_")
-		fileName += LAYOUT_EXTENSION_ISO.replace("xx", iso)
-		return fileName
-	}
+    fun createFileName(layoutName: String, iso: String): String { return layoutName }
 
 	@JvmStatic
 	@Throws(IOException::class)
@@ -62,17 +49,7 @@ object CustomLayoutsUtils {
 	}
 
 	@JvmStatic
-	fun getCurrentLayoutName(context: Context): String {
-		var layoutName = OSMTracker.Preferences.VAL_UI_BUTTONS_LAYOUT
-		try {
-			val sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-			layoutName = sharedPreferences.getString(
-				OSMTracker.Preferences.KEY_UI_BUTTONS_LAYOUT,
-				OSMTracker.Preferences.VAL_UI_BUTTONS_LAYOUT
-			) ?: OSMTracker.Preferences.VAL_UI_BUTTONS_LAYOUT
-		}catch (_: Exception) {}
-		return layoutName
-	}
+    fun getCurrentLayoutName(context: Context): String { return "default" }
 }
 
 

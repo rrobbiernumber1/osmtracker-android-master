@@ -35,12 +35,7 @@ class Preferences : PreferenceActivity() {
 		listView.clipToPadding = false
 		listView.setPadding(0, 48, 0, 0)
 		val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-		val buttonLayoutPref: Preference? = findPreference("prefs_ui_buttons_layout")
-		buttonLayoutPref?.onPreferenceClickListener = Preference.OnPreferenceClickListener {
-			val intent = Intent(this, ButtonsPresets::class.java)
-			startActivity(intent)
-			true
-		}
+		
 		val storageDirPref = findPreference(OSMTracker.Preferences.KEY_STORAGE_DIR) as EditTextPreference
 		storageDirPref.summary = prefs.getString(OSMTracker.Preferences.KEY_STORAGE_DIR, OSMTracker.Preferences.VAL_STORAGE_DIR)
 		storageDirPref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference, newValue ->
@@ -49,13 +44,8 @@ class Preferences : PreferenceActivity() {
 			preference.summary = nv
 			true
 		}
-		var pref: Preference = findPreference(OSMTracker.Preferences.KEY_VOICEREC_DURATION)
-		pref.summary = prefs.getString(OSMTracker.Preferences.KEY_VOICEREC_DURATION, OSMTracker.Preferences.VAL_VOICEREC_DURATION) + " " + resources.getString(R.string.prefs_voicerec_duration_seconds)
-		pref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference, newValue ->
-			preference.summary = newValue.toString() + " " + resources.getString(R.string.prefs_voicerec_duration_seconds)
-			true
-		}
-		pref = findPreference(OSMTracker.Preferences.KEY_USE_BAROMETER)
+        
+		var pref: Preference = findPreference(OSMTracker.Preferences.KEY_USE_BAROMETER)
 		pref.summary = resources.getString(R.string.prefs_use_barometer_summary)
 		pref = findPreference(OSMTracker.Preferences.KEY_GPS_LOGGING_INTERVAL)
 		pref.summary = prefs.getString(OSMTracker.Preferences.KEY_GPS_LOGGING_INTERVAL, OSMTracker.Preferences.VAL_GPS_LOGGING_INTERVAL) + " " + resources.getString(R.string.prefs_gps_logging_interval_seconds) + ". " + resources.getString(R.string.prefs_gps_logging_interval_summary)
