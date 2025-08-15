@@ -155,7 +155,6 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 
 	override fun onOptionsItemSelected(item: MenuItem): Boolean {
 		when (item.itemId) {
-			R.id.trackmgr_menu_newtrack -> startNewTrack()
 			R.id.trackmgr_menu_continuetrack -> {
 				// resume tracking for current active track
 				val intent = Intent(OSMTracker.INTENT_START_TRACKING)
