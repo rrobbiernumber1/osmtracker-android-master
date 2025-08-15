@@ -29,7 +29,6 @@ import net.osmtracker.R
 import net.osmtracker.db.TrackContentProvider
 import net.osmtracker.db.model.Track
 import net.osmtracker.gpx.ExportToStorageTask
-import net.osmtracker.util.MercatorProjection
 import java.sql.Date
 import java.text.DateFormat
 
@@ -90,11 +89,11 @@ class TrackDetail : TrackDetailEditor(), AdapterView.OnItemClickListener {
 		data.add(map)
 		map = HashMap()
 		map[ITEM_KEY] = resources.getString(R.string.trackdetail_startloc)
-        map[ITEM_VALUE] = MercatorProjection.formatDegreesAsDMS(t.getStartLat(), true) + "  " + MercatorProjection.formatDegreesAsDMS(t.getStartLong(), false)
+        map[ITEM_VALUE] = String.format("%.6f, %.6f", t.getStartLat(), t.getStartLong())
 		data.add(map)
 		map = HashMap()
 		map[ITEM_KEY] = resources.getString(R.string.trackdetail_endloc)
-        map[ITEM_VALUE] = MercatorProjection.formatDegreesAsDMS(t.getEndLat(), true) + "  " + MercatorProjection.formatDegreesAsDMS(t.getEndLong(), false)
+        map[ITEM_VALUE] = String.format("%.6f, %.6f", t.getEndLat(), t.getEndLong())
 		data.add(map)
         // OSM 업로드 정보 제거됨
 		map = HashMap()
@@ -124,9 +123,7 @@ class TrackDetail : TrackDetailEditor(), AdapterView.OnItemClickListener {
 			}
 			R.id.trackdetail_menu_cancel -> finish()
 			R.id.trackdetail_menu_display -> {
-				val useOpenStreetMapBackground = PreferenceManager.getDefaultSharedPreferences(this)
-					.getBoolean(OSMTracker.Preferences.KEY_UI_DISPLAYTRACK_OSM, OSMTracker.Preferences.VAL_UI_DISPLAYTRACK_OSM)
-				val i = if (useOpenStreetMapBackground) Intent(this, DisplayTrackMap::class.java) else Intent(this, DisplayTrack::class.java)
+				val i = Intent(this, DisplayTrack::class.java)
 				i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
 				startActivity(i)
 			}
@@ -175,9 +172,7 @@ class TrackDetail : TrackDetailEditor(), AdapterView.OnItemClickListener {
 
 	override fun onItemClick(parent: AdapterView<*>?, view: View?, position: Int, rowid: Long) {
 		if (position != WP_COUNT_INDEX) return
-		val i = Intent(this, WaypointList::class.java)
-		i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
-		startActivity(i)
+		// WaypointList 제거됨
 	}
 
 	private inner class TrackDetailSimpleAdapter(

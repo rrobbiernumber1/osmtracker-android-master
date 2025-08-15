@@ -13,17 +13,7 @@
 		<item>landscape</item>
 	</string-array>
 
-	<string-array name="prefs_voicerec_durations">
-		<item>2</item>
-		<item>3</item>
-		<item>4</item>
-		<item>5</item>
-		<item>10</item>
-		<item>20</item>
-		<item>30</item>
-	</string-array>
-
-	<string-array name="prefs_theme_values">
+    <string-array name="prefs_theme_values">
 		<item>net.osmtracker:style/DefaultTheme</item>
 		<item>net.osmtracker:style/DarkTheme</item>
 		<item>net.osmtracker:style/LightTheme</item>
@@ -42,13 +32,8 @@
 		<item>wpt_name</item>
 		<item>wpt_cmt</item>
 	</string-array>
-	
-	<string-array name="prefs_map_tile_values">
-		<item>MAPNIK</item>
-		<item>CYCLEMAP</item>
-		<item>MAPQUESTOSM</item>
-	</string-array>
-	<string-array name="prefs_compass_heading_values">
+
+    <string-array name="prefs_compass_heading_values">
 		<item >none</item>
 		<item >comment</item>
 		<item >extension</item>

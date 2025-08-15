@@ -31,7 +31,6 @@ open class TrackContentProvider : ContentProvider() {
 				Schema.TBL_TRACK + "." + Schema.COL_NAME + " as " + Schema.COL_NAME,
 				Schema.COL_DESCRIPTION,
 				Schema.COL_TAGS,
-                Schema.COL_OSM_VISIBILITY,
 				Schema.COL_START_DATE,
 				"count(" + Schema.TBL_TRACKPOINT + "." + Schema.COL_ID + ") as " + Schema.COL_TRACKPOINT_COUNT,
 				"(SELECT count(" + Schema.TBL_WAYPOINT + "." + Schema.COL_TRACK_ID + ") FROM " + Schema.TBL_WAYPOINT + " WHERE " + Schema.TBL_WAYPOINT + "." + Schema.COL_TRACK_ID + " = " + Schema.TBL_TRACK + "." + Schema.COL_ID + ") as " + Schema.COL_WAYPOINT_COUNT
@@ -251,7 +250,6 @@ open class TrackContentProvider : ContentProvider() {
 			const val COL_NAME = "name"
 			const val COL_DESCRIPTION = "description"
 			const val COL_TAGS = "tags"
-			const val COL_OSM_VISIBILITY = "osm_visibility"
 			const val COL_LINK = "link"
 			const val COL_START_DATE = "start_date"
 			@Deprecated("deprecated") const val COL_DIR = "directory"

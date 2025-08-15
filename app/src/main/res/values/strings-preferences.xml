@@ -93,17 +93,9 @@
 
 	<string name="prefs_sound_enabled">Enable sound</string>
 	<string name="prefs_sound_enabled_summary">Play sounds when voice recording starts and ends</string>
-	
-	
-	
-	<string name="prefs_map_tile">Map tile provider</string>
-	<string name="prefs_map_tile_summary"></string>
-	<string-array name="prefs_map_tile_keys">
-		<item>Mapnik</item>
-		<item>Cycle Map</item>
-		<item>MapQuest Open</item>
-	</string-array>
-	<string-array name="prefs_compass_heading_keys">
+
+
+    <string-array name="prefs_compass_heading_keys">
 		<item >None</item>
 		<item >in comment</item>
 		<item >in extension</item>

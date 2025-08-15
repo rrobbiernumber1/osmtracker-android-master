@@ -23,7 +23,6 @@ class Track {
 			if (tags != null && tags != "") {
 				out.tags.addAll(tags.split(","))
 			}
-			out.visibility = OSMVisibility.valueOf(tc.getString(tc.getColumnIndex(TrackContentProvider.Schema.COL_OSM_VISIBILITY)))
 			out.tpCount = tc.getInt(tc.getColumnIndex(TrackContentProvider.Schema.COL_TRACKPOINT_COUNT))
 			out.wpCount = tc.getInt(tc.getColumnIndex(TrackContentProvider.Schema.COL_WAYPOINT_COUNT))
 			if (withExtraInformation) {
@@ -33,25 +32,9 @@ class Track {
 		}
 	}
 
-	enum class OSMVisibility(@JvmField val position: Int, @JvmField val resId: Int) {
-		Private(0, R.string.osm_visibility_private),
-		Public(1, R.string.osm_visibility_public),
-		Trackable(2, R.string.osm_visibility_trackable),
-		Identifiable(3, R.string.osm_visibility_identifiable);
-		companion object {
-			@JvmStatic
-			fun fromPosition(position: Int): OSMVisibility {
-				for (v in values()) {
-					if (v.position == position) return v
-				}
-				throw IllegalArgumentException()
-			}
-		}
-	}
 
 	private var name: String? = null
 	private var description: String? = null
-	private var visibility: OSMVisibility? = null
 	private var tags: MutableList<String> = mutableListOf()
 	private var tpCount: Int = 0
 	private var wpCount: Int = 0
@@ -111,8 +94,6 @@ class Track {
 	fun setTags(tags: List<String>) { this.tags = tags.toMutableList() }
 	fun setTags(tags: String) { if (tags.isNotEmpty()) this.tags.addAll(tags.split(",")) }
 	fun getTags(): List<String> = tags
-	fun setVisibility(visibility: OSMVisibility) { this.visibility = visibility }
-	fun getVisibility(): OSMVisibility? = visibility
 	fun getCommaSeparatedTags(): String = tags.joinToString(",")
 	fun getStartDateAsString(): String { readExtraInformation(); return if (startDate != null) DATE_FORMAT.format(Date(startDate!!)) else "" }
 	fun getEndDateAsString(): String { readExtraInformation(); return if (endDate != null) DATE_FORMAT.format(Date(endDate!!)) else "" }

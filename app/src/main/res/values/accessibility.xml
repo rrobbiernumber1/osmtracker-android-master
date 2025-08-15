@@ -2,8 +2,7 @@
 <resources>
     
     <!-- About screen -->
-    <string name="acc.osmtracker_logo">OSMTracker logo</string>
-    
+
     <!-- Zoom in/out in map view -->
     <string name="acc.zoom_in">Zoom in</string>
     <string name="acc.zoom_out">Zoom out</string>

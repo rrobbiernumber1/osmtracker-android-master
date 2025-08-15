@@ -20,17 +20,10 @@ object OSMTracker {
 		const val KEY_OUTPUT_DIR_PER_TRACK = "gpx.directory_per_track"
 		const val KEY_OUTPUT_COMPASS = "gpx.compass_heading"
 		const val KEY_UI_PICTURE_SOURCE = "ui.picture.source"
-		const val KEY_UI_BUTTONS_LAYOUT = "ui.buttons.layout"
-		const val KEY_UI_DISPLAYTRACK_OSM = "ui.displaytrack.osm"
-		const val KEY_UI_ASKED_DISPLAYTRACK_OSM = "ui.displaytrack.asked_osm"
 		const val KEY_UI_DISPLAY_KEEP_ON = "ui.display_keep_on"
-		const val KEY_UI_MAP_TILE = "ui.map.tile"
 		const val KEY_SOUND_ENABLED = "sound_enabled"
 		const val KEY_UI_ORIENTATION = "ui.orientation"
         // OSM 업로드 제거됨: 인증 키 미사용
-		const val KEY_GITHUB_USERNAME = "github_username"
-		const val KEY_REPOSITORY_NAME = "repository_name"
-		const val KEY_BRANCH_NAME = "branch_name"
 		// Intro removed: KEY_DISPLAY_APP_INTRO no longer used
 
 		const val VAL_STORAGE_DIR = "/osmtracker"
@@ -67,8 +60,6 @@ object OSMTracker {
 		const val VAL_UI_PICTURE_SOURCE_ASK = "ask"
 		const val VAL_UI_PICTURE_SOURCE = VAL_UI_PICTURE_SOURCE_CAMERA
 
-		const val VAL_UI_BUTTONS_LAYOUT = "default"
-		const val VAL_UI_DISPLAYTRACK_OSM = false
 		const val VAL_UI_DISPLAY_KEEP_ON = true
 		const val VAL_SOUND_ENABLED = true
 		const val VAL_UI_ORIENTATION_NONE = "none"
@@ -76,11 +67,7 @@ object OSMTracker {
 		const val VAL_UI_ORIENTATION_LANDSCAPE = "landscape"
 		const val VAL_UI_ORIENTATION = VAL_UI_ORIENTATION_NONE
 
-		const val VAL_UI_MAP_TILE_MAPNIK = "MAPNIK"
 
-		const val VAL_GITHUB_USERNAME = "labexp"
-		const val VAL_REPOSITORY_NAME = "osmtracker-android-layouts"
-		const val VAL_BRANCH_NAME = "master"
 
 		// Intro removed: VAL_DISPLAY_APP_INTRO no longer used
 	}

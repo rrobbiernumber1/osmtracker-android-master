@@ -59,12 +59,10 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 				TrackContentProvider.Schema.COL_NAME + " text," +
 				TrackContentProvider.Schema.COL_DESCRIPTION + " text," +
 				TrackContentProvider.Schema.COL_TAGS + " text," +
-				TrackContentProvider.Schema.COL_OSM_VISIBILITY + " text default '" + Track.OSMVisibility.Private + "'," +
 				TrackContentProvider.Schema.COL_START_DATE + " long not null," +
 				TrackContentProvider.Schema.COL_DIR + " text," +
 				TrackContentProvider.Schema.COL_ACTIVE + " integer not null default 0," +
-				TrackContentProvider.Schema.COL_EXPORT_DATE + " long," +
-				TrackContentProvider.Schema.COL_OSM_UPLOAD_DATE + " long" +
+				TrackContentProvider.Schema.COL_EXPORT_DATE + " long" +
 				")"
 	}
 
@@ -89,10 +87,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 			}
 		}
 		if (oldVersion <= 13) {
-			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_TRACK + " add column " + TrackContentProvider.Schema.COL_OSM_UPLOAD_DATE + " long")
 			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_TRACK + " add column " + TrackContentProvider.Schema.COL_DESCRIPTION + " text")
 			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_TRACK + " add column " + TrackContentProvider.Schema.COL_TAGS + " text")
-			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_TRACK + " add column " + TrackContentProvider.Schema.COL_OSM_VISIBILITY + " text default '" + Track.OSMVisibility.Private + "'")
 		}
 		if (oldVersion <= 14) {
 			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_TRACKPOINT + " add column " + TrackContentProvider.Schema.COL_SPEED + " double null")

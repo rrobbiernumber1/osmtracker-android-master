@@ -21,7 +21,6 @@ abstract class TrackDetailEditor : Activity() {
 	protected lateinit var etName: EditText
 	protected lateinit var etDescription: EditText
 	protected lateinit var etTags: EditText
-	protected lateinit var spVisibility: Spinner
 	protected var fieldsMandatory = false
 
 	protected fun onCreate(savedInstanceState: Bundle?, viewResId: Int, trackId: Long) {
@@ -32,13 +31,6 @@ abstract class TrackDetailEditor : Activity() {
 		etName = findViewById(R.id.trackdetail_item_name)
 		etDescription = findViewById(R.id.trackdetail_item_description)
 		etTags = findViewById(R.id.trackdetail_item_tags)
-		spVisibility = findViewById(R.id.trackdetail_item_osm_visibility)
-		val adapter = ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item)
-		for (v in Track.OSMVisibility.values()) {
-			adapter.add(resources.getString(v.resId))
-		}
-		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-		spVisibility.adapter = adapter
 	}
 
     protected fun bindTrack(t: Track) {
@@ -47,7 +39,6 @@ abstract class TrackDetailEditor : Activity() {
 		}
         etDescription.setText(t.getDescription())
         etTags.setText(t.getCommaSeparatedTags())
-        spVisibility.setSelection(t.getVisibility()!!.position)
 	}
 
 	protected fun save(): Boolean {
@@ -74,10 +65,6 @@ abstract class TrackDetailEditor : Activity() {
 		values.put(TrackContentProvider.Schema.COL_NAME, nameToSave)
 		values.put(TrackContentProvider.Schema.COL_DESCRIPTION, etDescription.text.toString().trim { it <= ' ' })
 		values.put(TrackContentProvider.Schema.COL_TAGS, etTags.text.toString().trim { it <= ' ' })
-		values.put(
-			TrackContentProvider.Schema.COL_OSM_VISIBILITY,
-			Track.OSMVisibility.fromPosition(spVisibility.selectedItemPosition).toString()
-		)
 		contentResolver.update(trackUri, values, null, null)
 		return true
 	}

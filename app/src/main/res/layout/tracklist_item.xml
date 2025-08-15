@@ -20,7 +20,6 @@
 		app:layout_constraintTop_toTopOf="parent">
 
 		<TextView
-			android:id="@+id/trackmgr_item_id_symbol"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:text="#"
@@ -62,7 +61,6 @@
 		app:layout_constraintTop_toBottomOf="@id/trackmgr_item_nameordate">
 
 		<TextView
-			android:id="@+id/trackmgr_item_waypoints"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:text="@string/trackmgr_waypoints_count"

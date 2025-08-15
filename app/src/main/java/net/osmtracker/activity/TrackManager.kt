@@ -39,7 +39,6 @@ import net.osmtracker.gpx.ExportToStorageTask
 import net.osmtracker.gpx.ExportToTempFileTask
 import net.osmtracker.gpx.ZipHelper
 import net.osmtracker.util.FileSystemUtils
-import net.osmtracker.view.TextNoteDialog
 import java.io.File
 import java.util.Date
 
@@ -83,15 +82,6 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		dividerItemDecoration.setDrawable(ContextCompat.getDrawable(this, R.drawable.divider)!!)
 		recyclerView.addItemDecoration(dividerItemDecoration)
 
-		// New: left-bottom FAB to add text waypoint to active track directly
-		findViewById<FloatingActionButton>(R.id.trackmgr_fab_text_wp).setOnClickListener {
-			currentTrackId = DataHelper.getActiveTrackId(contentResolver)
-			if (currentTrackId == TRACK_ID_NO_TRACK) {
-				Toast.makeText(this, R.string.trackmgr_empty, Toast.LENGTH_SHORT).show()
-				return@setOnClickListener
-			}
-			openTextNoteDialogFor(currentTrackId)
-		}
 	 }
 
 	override fun onResume() {
@@ -287,10 +277,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 
 	private fun displayTrack(trackId: Long) {
 		Log.e(TAG, "On Display Track")
-		val i: Intent
-		val useOpenStreetMapBackground = PreferenceManager.getDefaultSharedPreferences(this)
-			.getBoolean(OSMTracker.Preferences.KEY_UI_DISPLAYTRACK_OSM, OSMTracker.Preferences.VAL_UI_DISPLAYTRACK_OSM)
-		i = if (useOpenStreetMapBackground) Intent(this, DisplayTrackMap::class.java) else Intent(this, DisplayTrack::class.java)
+		val i = Intent(this, DisplayTrack::class.java)
 		i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
 		startActivity(i)
 	}
@@ -426,10 +413,6 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		}
 	}
 
-	private fun openTextNoteDialogFor(trackId: Long) {
-		val dialog = TextNoteDialog(this, trackId)
-		dialog.show()
-	}
 }
 
 
