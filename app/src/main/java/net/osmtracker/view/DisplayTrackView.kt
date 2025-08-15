@@ -2,7 +2,6 @@ package net.osmtracker.view
 
 import android.content.Context
 import android.database.ContentObserver
-import android.database.Cursor
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path

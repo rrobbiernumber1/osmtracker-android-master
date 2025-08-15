@@ -12,13 +12,11 @@ object OSMTracker {
 		const val KEY_GPS_IGNORE_CLOCK = "gps.ignoreclock"
 		const val KEY_GPS_LOGGING_INTERVAL = "gps.logging.interval"
 		const val KEY_GPS_LOGGING_MIN_DISTANCE = "gps.logging.min_distance"
-		const val KEY_USE_BAROMETER = "gpx.use_barometer"
 		const val KEY_OUTPUT_FILENAME = "gpx.filename"
 		const val KEY_OUTPUT_FILENAME_LABEL = "gpx.filename.label"
 		const val KEY_OUTPUT_ACCURACY = "gpx.accuracy"
 		const val KEY_OUTPUT_GPX_HDOP_APPROXIMATION = "gpx.hdop.approximation"
 		const val KEY_OUTPUT_DIR_PER_TRACK = "gpx.directory_per_track"
-		const val KEY_OUTPUT_COMPASS = "gpx.compass_heading"
 		const val KEY_UI_PICTURE_SOURCE = "ui.picture.source"
 		const val KEY_UI_DISPLAY_KEEP_ON = "ui.display_keep_on"
 		const val KEY_SOUND_ENABLED = "sound_enabled"
@@ -33,7 +31,6 @@ object OSMTracker {
 		const val VAL_GPS_IGNORE_CLOCK = false
 		const val VAL_GPS_LOGGING_INTERVAL = "0"
 		const val VAL_GPS_LOGGING_MIN_DISTANCE = "0"
-		const val VAL_USE_BAROMETER = false
 
 		const val VAL_OUTPUT_FILENAME_NAME = "name"
 		const val VAL_OUTPUT_FILENAME_NAME_DATE = "name_date"
@@ -47,10 +44,6 @@ object OSMTracker {
 		const val VAL_OUTPUT_ACCURACY_WPT_CMT = "wpt_cmt"
 		const val VAL_OUTPUT_ACCURACY = VAL_OUTPUT_ACCURACY_NONE
 
-		const val VAL_OUTPUT_COMPASS_NONE = "none"
-		const val VAL_OUTPUT_COMPASS_COMMENT = "comment"
-		const val VAL_OUTPUT_COMPASS_EXTENSION = "extension"
-		const val VAL_OUTPUT_COMPASS = VAL_OUTPUT_COMPASS_NONE
 
 		const val VAL_OUTPUT_GPX_HDOP_APPROXIMATION = false
 		const val VAL_OUTPUT_GPX_OUTPUT_DIR_PER_TRACK = true

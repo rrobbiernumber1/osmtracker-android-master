@@ -31,9 +31,6 @@ open class DataHelper(private val context: Context) {
 		const val MIME_TYPE_IMAGE = "image/*"
 		const val FILE_PROVIDER_AUTHORITY = "net.osmtracker.fileprovider"
 		private const val MAX_RENAME_ATTEMPTS = 20
-		const val AZIMUTH_MIN = 0f
-		const val AZIMUTH_MAX = 360f
-		const val AZIMUTH_INVALID = -1f
 		@JvmField val FILENAME_FORMATTER = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss")
 		@JvmStatic fun getActiveTrackId(cr: ContentResolver): Long {
 			var currentTrackId = -1L
@@ -84,8 +81,8 @@ open class DataHelper(private val context: Context) {
 
 	private val contentResolver: ContentResolver by lazy { context.contentResolver }
 
-	fun track(trackId: Long, location: Location, azimuth: Float, accuracy: Int, pressure: Float) {
-		Log.v(TAG, "Tracking (trackId=$trackId) location: $location azimuth: $azimuth, accuracy: $accuracy")
+	fun track(trackId: Long, location: Location) {
+		Log.v(TAG, "Tracking (trackId=$trackId) location: $location")
 		val values = ContentValues()
 		values.put(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
 		values.put(TrackContentProvider.Schema.COL_LATITUDE, location.latitude)
@@ -99,17 +96,12 @@ open class DataHelper(private val context: Context) {
 		} else {
 			values.put(TrackContentProvider.Schema.COL_TIMESTAMP, location.time)
 		}
-		if (azimuth >= AZIMUTH_MIN && azimuth < AZIMUTH_MAX) {
-			values.put(TrackContentProvider.Schema.COL_COMPASS, azimuth)
-			values.put(TrackContentProvider.Schema.COL_COMPASS_ACCURACY, accuracy)
-		}
-		if (pressure != 0f) values.put(TrackContentProvider.Schema.COL_ATMOSPHERIC_PRESSURE, pressure)
 		val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)
 		contentResolver.insert(Uri.withAppendedPath(trackUri, TrackContentProvider.Schema.TBL_TRACKPOINT + "s"), values)
 	}
 
-	fun wayPoint(trackId: Long, location: Location?, name: String, link: String?, uuid: String?, azimuth: Float, accuracy: Int, pressure: Float) {
-		Log.d(TAG, "Tracking waypoint '$name', track=$trackId, uuid=$uuid, nbSatellites=" + (location?.extras?.getInt("satellites") ?: 0) + ", link='" + link + "', location=" + location + ", azimuth=" + azimuth + ", accuracy=" + accuracy)
+	fun wayPoint(trackId: Long, location: Location?, name: String, link: String?, uuid: String?) {
+		Log.d(TAG, "Tracking waypoint '$name', track=$trackId, uuid=$uuid, nbSatellites=" + (location?.extras?.getInt("satellites") ?: 0) + ", link='" + link + "', location=" + location)
 		if (location != null) {
 			val values = ContentValues()
 			values.put(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
@@ -127,11 +119,6 @@ open class DataHelper(private val context: Context) {
 			} else {
 				values.put(TrackContentProvider.Schema.COL_TIMESTAMP, location.time)
 			}
-			if (azimuth >= AZIMUTH_MIN && azimuth < AZIMUTH_MAX) {
-				values.put(TrackContentProvider.Schema.COL_COMPASS, azimuth)
-				values.put(TrackContentProvider.Schema.COL_COMPASS_ACCURACY, accuracy)
-			}
-			if (pressure != 0f) values.put(TrackContentProvider.Schema.COL_ATMOSPHERIC_PRESSURE, pressure)
 			val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)
 			contentResolver.insert(Uri.withAppendedPath(trackUri, TrackContentProvider.Schema.TBL_WAYPOINT + "s"), values)
 		}

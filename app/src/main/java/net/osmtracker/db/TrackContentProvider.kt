@@ -257,9 +257,6 @@ open class TrackContentProvider : ContentProvider() {
 			const val COL_EXPORT_DATE = "export_date"
             // OSM 업로드 일자 컬럼은 더 이상 사용하지 않음 (DB 스키마 호환을 위해 유지)
             const val COL_OSM_UPLOAD_DATE = "osm_upload_date"
-			const val COL_COMPASS = "compass_heading"
-			const val COL_COMPASS_ACCURACY = "compass_accuracy"
-			const val COL_ATMOSPHERIC_PRESSURE = "atmospheric_pressure"
 			const val COL_TRACKPOINT_COUNT = "tp_count"
 			const val COL_WAYPOINT_COUNT = "wp_count"
 			const val URI_CODE_TRACK = 3

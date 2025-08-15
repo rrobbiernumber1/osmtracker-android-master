@@ -45,9 +45,7 @@ class Preferences : PreferenceActivity() {
 			true
 		}
         
-		var pref: Preference = findPreference(OSMTracker.Preferences.KEY_USE_BAROMETER)
-		pref.summary = resources.getString(R.string.prefs_use_barometer_summary)
-		pref = findPreference(OSMTracker.Preferences.KEY_GPS_LOGGING_INTERVAL)
+		var pref: Preference = findPreference(OSMTracker.Preferences.KEY_GPS_LOGGING_INTERVAL)
 		pref.summary = prefs.getString(OSMTracker.Preferences.KEY_GPS_LOGGING_INTERVAL, OSMTracker.Preferences.VAL_GPS_LOGGING_INTERVAL) + " " + resources.getString(R.string.prefs_gps_logging_interval_seconds) + ". " + resources.getString(R.string.prefs_gps_logging_interval_summary)
 		pref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference, newValue ->
 			preference.summary = newValue.toString() + " " + resources.getString(R.string.prefs_gps_logging_interval_seconds) + ". " + resources.getString(R.string.prefs_gps_logging_interval_summary)

@@ -27,8 +27,6 @@ import net.osmtracker.R
 import net.osmtracker.activity.TrackManager
 import net.osmtracker.db.DataHelper
 import net.osmtracker.db.TrackContentProvider
-import net.osmtracker.listener.PressureListener
-import net.osmtracker.listener.SensorListener
 
 class GPSLogger : Service(), LocationListener {
 
@@ -37,15 +35,12 @@ class GPSLogger : Service(), LocationListener {
 	private lateinit var dataHelper: DataHelper
 	private var isTracking: Boolean = false
 	private var isGpsEnabled: Boolean = false
-	private var use_barometer: Boolean = false
 	private var lastLocation: Location? = null
 	private lateinit var lmgr: LocationManager
 	private var currentTrackId: Long = -1
 	private var lastGPSTimestamp: Long = 0
 	private var gpsLoggingInterval: Long = 0
 	private var gpsLoggingMinDistance: Long = 0
-	private val sensorListener: SensorListener = SensorListener()
-	private val pressureListener: PressureListener = PressureListener()
 
 	private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
 		override fun onReceive(context: Context, intent: Intent) {
@@ -63,8 +58,8 @@ class GPSLogger : Service(), LocationListener {
 								val name = extras.getString(OSMTracker.INTENT_KEY_NAME)
 								val link = extras.getString(OSMTracker.INTENT_KEY_LINK)
 
-								dataHelper.wayPoint(trackId, loc, name ?: "", link, uuid, sensorListener.getAzimuth(), sensorListener.getAccuracy(), pressureListener.getPressure())
-								dataHelper.track(trackId, loc, sensorListener.getAzimuth(), sensorListener.getAccuracy(), pressureListener.getPressure())
+								dataHelper.wayPoint(trackId, loc, name ?: "", link, uuid)
+								dataHelper.track(trackId, loc)
 							}
 						}
 					}
@@ -136,8 +131,6 @@ class GPSLogger : Service(), LocationListener {
 			.getString(OSMTracker.Preferences.KEY_GPS_LOGGING_INTERVAL, OSMTracker.Preferences.VAL_GPS_LOGGING_INTERVAL)!!.toLong() * 1000
 		gpsLoggingMinDistance = PreferenceManager.getDefaultSharedPreferences(this.applicationContext)
 			.getString(OSMTracker.Preferences.KEY_GPS_LOGGING_MIN_DISTANCE, OSMTracker.Preferences.VAL_GPS_LOGGING_MIN_DISTANCE)!!.toLong()
-		use_barometer = PreferenceManager.getDefaultSharedPreferences(this.applicationContext)
-			.getBoolean(OSMTracker.Preferences.KEY_USE_BAROMETER, OSMTracker.Preferences.VAL_USE_BAROMETER)
 
 		val filter = IntentFilter()
 		filter.addAction(OSMTracker.INTENT_TRACK_WP)
@@ -156,8 +149,6 @@ class GPSLogger : Service(), LocationListener {
 			lmgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, gpsLoggingInterval, gpsLoggingMinDistance.toFloat(), this)
 		}
 
-		sensorListener.register(this)
-		pressureListener.register(this, use_barometer)
 
 		super.onCreate()
 	}
@@ -177,8 +168,6 @@ class GPSLogger : Service(), LocationListener {
 		lmgr.removeUpdates(this)
 		unregisterReceiver(receiver)
 		stopNotifyBackgroundService()
-		sensorListener.unregister()
-		pressureListener.unregister()
 		super.onDestroy()
 	}
 
@@ -203,7 +192,7 @@ class GPSLogger : Service(), LocationListener {
 			lastGPSTimestamp = System.currentTimeMillis()
 			lastLocation = location
 			if (isTracking) {
-				dataHelper.track(currentTrackId, location, sensorListener.getAzimuth(), sensorListener.getAccuracy(), pressureListener.getPressure())
+				dataHelper.track(currentTrackId, location)
 			}
 		}
 	}

@@ -28,9 +28,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 				TrackContentProvider.Schema.COL_ELEVATION + " double null," +
 				TrackContentProvider.Schema.COL_ACCURACY + " double null," +
 				TrackContentProvider.Schema.COL_TIMESTAMP + " long not null," +
-				TrackContentProvider.Schema.COL_COMPASS + " double null," +
-				TrackContentProvider.Schema.COL_COMPASS_ACCURACY + " integer null," +
-				TrackContentProvider.Schema.COL_ATMOSPHERIC_PRESSURE + " double null" + ")"
+				")"
 		private val SQL_CREATE_IDX_TRACKPOINT_TRACK: String = "create index if not exists " +
 				TrackContentProvider.Schema.TBL_TRACKPOINT +
 				"_idx ON " + TrackContentProvider.Schema.TBL_TRACKPOINT + "(" + TrackContentProvider.Schema.COL_TRACK_ID + ")"
@@ -47,9 +45,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 				TrackContentProvider.Schema.COL_NAME + " text," +
 				TrackContentProvider.Schema.COL_LINK + " text," +
 				TrackContentProvider.Schema.COL_NBSATELLITES + " integer not null," +
-				TrackContentProvider.Schema.COL_COMPASS + " double null," +
-				TrackContentProvider.Schema.COL_COMPASS_ACCURACY + " integer null," +
-				TrackContentProvider.Schema.COL_ATMOSPHERIC_PRESSURE + " double null" + ")"
+				")"
 		private val SQL_CREATE_IDX_WAYPOINT_TRACK: String = "create index if not exists " +
 				TrackContentProvider.Schema.TBL_WAYPOINT +
 				"_idx ON " + TrackContentProvider.Schema.TBL_WAYPOINT + "(" + TrackContentProvider.Schema.COL_TRACK_ID + ")"
@@ -94,14 +90,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_TRACKPOINT + " add column " + TrackContentProvider.Schema.COL_SPEED + " double null")
 		}
 		if (oldVersion <= 15) {
-			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_TRACKPOINT + " add column " + TrackContentProvider.Schema.COL_COMPASS + " double null")
-			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_TRACKPOINT + " add column " + TrackContentProvider.Schema.COL_COMPASS_ACCURACY + " integer null")
-			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_WAYPOINT + " add column " + TrackContentProvider.Schema.COL_COMPASS + " double null")
-			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_WAYPOINT + " add column " + TrackContentProvider.Schema.COL_COMPASS_ACCURACY + " integer null")
 		}
 		if (oldVersion <= 16) {
-			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_TRACKPOINT + " add column " + TrackContentProvider.Schema.COL_ATMOSPHERIC_PRESSURE + " double null")
-			db.execSQL("alter table " + TrackContentProvider.Schema.TBL_WAYPOINT + " add column " + TrackContentProvider.Schema.COL_ATMOSPHERIC_PRESSURE + " double null")
 		}
 	}
 

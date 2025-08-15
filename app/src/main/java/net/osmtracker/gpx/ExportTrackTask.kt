@@ -149,10 +149,6 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
         val fillHDOP = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(
             OSMTracker.Preferences.KEY_OUTPUT_GPX_HDOP_APPROXIMATION, OSMTracker.Preferences.VAL_OUTPUT_GPX_HDOP_APPROXIMATION
         )
-        val compassOutput = PreferenceManager.getDefaultSharedPreferences(context).getString(
-            OSMTracker.Preferences.KEY_OUTPUT_COMPASS, OSMTracker.Preferences.VAL_OUTPUT_COMPASS
-        )
-        Log.v(TAG, "write preferences: compass:$compassOutput")
         var writer: Writer? = null
         try {
             writer = BufferedWriter(FileWriter(target))
@@ -164,8 +160,8 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
                 for (tag in tags.split(",")) writer.write("\t\t<keywords>" + tag.trim() + "</keywords>\n")
             if (trackDescription != null && trackDescription != "") writer.write("\t\t<desc>$trackDescription</desc>\n")
             writer.write("\t</metadata>\n")
-            writeWayPoints(writer, cWayPoints, accuracyOutput!!, fillHDOP, compassOutput!!)
-            writeTrackPoints(context.resources.getString(R.string.gpx_track_name), writer, cTrackPoints, fillHDOP, compassOutput)
+            writeWayPoints(writer, cWayPoints, accuracyOutput!!, fillHDOP)
+            writeTrackPoints(context.resources.getString(R.string.gpx_track_name), writer, cTrackPoints, fillHDOP)
             writer.write("</gpx>")
         } finally {
             writer?.close()
@@ -173,7 +169,7 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
     }
 
     @Throws(IOException::class)
-    private fun writeTrackPoints(trackName: String, fw: Writer, c: Cursor, fillHDOP: Boolean, compass: String?) {
+    private fun writeTrackPoints(trackName: String, fw: Writer, c: Cursor, fillHDOP: Boolean) {
         var dialogUpdateThreshold = c.count / 100
         if (dialogUpdateThreshold == 0) dialogUpdateThreshold++
         fw.write("\t<trk>\n")
@@ -194,21 +190,9 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
             if (fillHDOP && !c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_ACCURACY))) {
                 out.append("\t\t\t\t<hdop>" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_ACCURACY)) / OSMTracker.HDOP_APPROXIMATION_FACTOR + "</hdop>\n")
             }
-            if (OSMTracker.Preferences.VAL_OUTPUT_COMPASS_COMMENT == compass && !c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS))) {
-                out.append("\t\t\t\t<cmt>" + CDATA_START + "compass heading: " + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS)) + "deg\n\t\t\t\t\tcompass accuracy: " + c.getLong(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS_ACCURACY)) + CDATA_END + "</cmt>\n")
-            }
             var buff = ""
             if (!c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_SPEED))) {
                 buff += "\t\t\t\t\t<speed>" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_SPEED)) + "</speed>\n"
-            }
-            if (OSMTracker.Preferences.VAL_OUTPUT_COMPASS_EXTENSION == compass && !c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS))) {
-                buff += "\t\t\t\t\t<compass>" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS)) + "</compass>\n"
-                buff += "\t\t\t\t\t<compass_accuracy>" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS_ACCURACY)) + "</compass_accuracy>\n"
-            }
-            if (!c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_ATMOSPHERIC_PRESSURE))) {
-                val pressure = c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_ATMOSPHERIC_PRESSURE))
-                val pressureFormatted = String.format("%.1f", pressure)
-                buff += "\t\t\t\t\t<baro>$pressureFormatted</baro>\n"
             }
             if (buff != "") {
                 out.append("\t\t\t\t<extensions>\n")
@@ -226,7 +210,7 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
     }
 
     @Throws(IOException::class)
-    private fun writeWayPoints(fw: Writer, c: Cursor, accuracyInfo: String, fillHDOP: Boolean, compass: String) {
+    private fun writeWayPoints(fw: Writer, c: Cursor, accuracyInfo: String, fillHDOP: Boolean) {
         var dialogUpdateThreshold = c.count / 100
         if (dialogUpdateThreshold == 0) dialogUpdateThreshold++
         val meterUnit = context.resources.getString(R.string.various_unit_meters)
@@ -244,23 +228,11 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
             if (OSMTracker.Preferences.VAL_OUTPUT_ACCURACY_NONE != accuracyInfo && !c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_ACCURACY))) {
                 if (OSMTracker.Preferences.VAL_OUTPUT_ACCURACY_WPT_NAME == accuracyInfo) {
                     out.append("\t\t<name>$CDATA_START$name (${"" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_ACCURACY))}$meterUnit)$CDATA_END</name>\n")
-                    if (OSMTracker.Preferences.VAL_OUTPUT_COMPASS_COMMENT == compass && !c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS))) {
-                        out.append("\t\t<cmt>" + CDATA_START + "compass heading: " + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS)) +
-                                "deg\n\t\t\tcompass accuracy: " + c.getInt(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS_ACCURACY)) + CDATA_END + "</cmt>\n")
-                    }
                 } else if (OSMTracker.Preferences.VAL_OUTPUT_ACCURACY_WPT_CMT == accuracyInfo) {
                     out.append("\t\t<name>$CDATA_START$name$CDATA_END</name>\n")
-                    if (OSMTracker.Preferences.VAL_OUTPUT_COMPASS_COMMENT == compass && !c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS))) {
-                        out.append("\t\t<cmt>$CDATA_START$accuracy: ${"" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_ACCURACY))}$meterUnit\n\t\t\t compass heading: " + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS)) + "deg\n\t\t\t compass accuracy: " + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS_ACCURACY)) + "$CDATA_END</cmt>\n")
-                    } else {
-                        out.append("\t\t<cmt>$CDATA_START$accuracy: ${"" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_ACCURACY))}$meterUnit$CDATA_END</cmt>\n")
-                    }
+                    out.append("\t\t<cmt>$CDATA_START$accuracy: ${"" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_ACCURACY))}$meterUnit$CDATA_END</cmt>\n")
                 } else {
                     out.append("\t\t<name>$CDATA_START$name$CDATA_END</name>\n")
-                    if (OSMTracker.Preferences.VAL_OUTPUT_COMPASS_COMMENT == compass && !c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS))) {
-                        out.append("\t\t<cmt>" + CDATA_START + "compass heading: " + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS)) +
-                                "deg\n\t\t\tcompass accuracy: " + c.getInt(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS_ACCURACY)) + CDATA_END + "</cmt>\n")
-                    }
                 }
             }
             val link = c.getString(c.getColumnIndex(TrackContentProvider.Schema.COL_LINK))
@@ -274,21 +246,6 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
             }
             if (fillHDOP && !c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_ACCURACY))) {
                 out.append("\t\t<hdop>" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_ACCURACY)) / OSMTracker.HDOP_APPROXIMATION_FACTOR + "</hdop>\n")
-            }
-            var buff = ""
-            if (OSMTracker.Preferences.VAL_OUTPUT_COMPASS_EXTENSION == compass && !c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS))) {
-                buff += "\t\t\t\t\t<compass>" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS)) + "</compass>\n"
-                buff += "\t\t\t\t\t<compass_accuracy>" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_COMPASS_ACCURACY)) + "</compass_accuracy>\n"
-            }
-            if (!c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_ATMOSPHERIC_PRESSURE))) {
-                val pressure = c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_ATMOSPHERIC_PRESSURE))
-                val pressureFormatted = String.format("%.1f", pressure)
-                buff += "\t\t\t\t\t<baro>$pressureFormatted</baro>\n"
-            }
-            if (buff != "") {
-                out.append("\t\t\t\t<extensions>\n")
-                out.append(buff)
-                out.append("\t\t\t\t</extensions>\n")
             }
             out.append("\t</wpt>\n")
             fw.write(out.toString())
