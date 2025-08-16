@@ -152,10 +152,25 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
             writer.write(XML_HEADER + "\n")
             writer.write(TAG_GPX + "\n")
             writer.write("\t<metadata>\n")
-            if (trackName != null && trackName != "") writer.write("\t\t<name>$trackName</name>\n")
-            if (tags != null && tags != "")
-                for (tag in tags.split(",")) writer.write("\t\t<keywords>" + tag.trim() + "</keywords>\n")
-            if (trackDescription != null && trackDescription != "") writer.write("\t\t<desc>$trackDescription</desc>\n")
+            if (trackName != null && trackName != "") writer.write("\t\t<name>$CDATA_START$trackName$CDATA_END</name>\n")
+            // Calculate total time and moving time
+            var totalTime = 0.0
+            var movingTime = 0.0
+            if (cTrackPoints.count > 0) {
+                cTrackPoints.moveToFirst()
+                val startTime = cTrackPoints.getLong(cTrackPoints.getColumnIndex(TrackContentProvider.Schema.COL_TIMESTAMP))
+                cTrackPoints.moveToLast()
+                val endTime = cTrackPoints.getLong(cTrackPoints.getColumnIndex(TrackContentProvider.Schema.COL_TIMESTAMP))
+                totalTime = (endTime - startTime) / 1000.0 // Convert to seconds
+                movingTime = totalTime // Set moving time equal to total time as requested
+                cTrackPoints.moveToFirst() // Reset cursor position
+                
+                writer.write("\t\t<time>" + pointDateFormatter.format(Date(startTime)) + "</time>\n")
+            }
+            
+            // Create JSON description in PairPlay format
+            val jsonDesc = """{"total_time":$totalTime,"elevation_gain":0,"activity_type":"Walking","moving_time":$movingTime,"created_by":"PairPlay_realtime_tracking"}"""
+            writer.write("\t\t<desc>$jsonDesc</desc>\n")
             writer.write("\t</metadata>\n")
             writeWayPoints(writer, cWayPoints, accuracyOutput!!, fillHDOP)
             writeTrackPoints(context.resources.getString(R.string.gpx_track_name), writer, cTrackPoints, fillHDOP)
@@ -170,10 +185,7 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
         var dialogUpdateThreshold = c.count / 100
         if (dialogUpdateThreshold == 0) dialogUpdateThreshold++
         fw.write("\t<trk>\n")
-        fw.write("\t\t<name>$CDATA_START$trackName$CDATA_END</name>\n")
-        if (fillHDOP) {
-            fw.write("\t\t<cmt>$CDATA_START" + context.resources.getString(R.string.gpx_hdop_approximation_cmt) + "$CDATA_END</cmt>\n")
-        }
+        fw.write("\t\t<type>Walking</type>\n")
         fw.write("\t\t<trkseg>\n")
         var i = 0
         c.moveToFirst()
@@ -184,18 +196,6 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
                 out.append("\t\t\t\t<ele>" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_ELEVATION)) + "</ele>\n")
             }
             out.append("\t\t\t\t<time>" + pointDateFormatter.format(Date(c.getLong(c.getColumnIndex(TrackContentProvider.Schema.COL_TIMESTAMP)))) + "</time>\n")
-            if (fillHDOP && !c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_ACCURACY))) {
-                out.append("\t\t\t\t<hdop>" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_ACCURACY)) / OSMTracker.HDOP_APPROXIMATION_FACTOR + "</hdop>\n")
-            }
-            var buff = ""
-            if (!c.isNull(c.getColumnIndex(TrackContentProvider.Schema.COL_SPEED))) {
-                buff += "\t\t\t\t\t<speed>" + c.getDouble(c.getColumnIndex(TrackContentProvider.Schema.COL_SPEED)) + "</speed>\n"
-            }
-            if (buff != "") {
-                out.append("\t\t\t\t<extensions>\n")
-                out.append(buff)
-                out.append("\t\t\t\t</extensions>\n")
-            }
             out.append("\t\t\t</trkpt>\n")
             fw.write(out.toString())
             if (i % dialogUpdateThreshold == 0) publishProgress(dialogUpdateThreshold.toLong())
@@ -302,10 +302,10 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
     companion object {
         private const val TAG = "ExportTrackTask"
         private val FILENAME_CHARS_BLACKLIST_PATTERN = Pattern.compile("[ '\"/\\\\*?~@<>]")
-        private const val XML_HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"
+        private const val XML_HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         private const val CDATA_START = "<![CDATA["
         private const val CDATA_END = "]]>"
-        private const val TAG_GPX = "<gpx xmlns=\"http://www.topografix.com/GPX/1/1\" version=\"1.1\" creator=\"OSMTracker for Android™ - https://github.com/labexp/osmtracker-android\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd \">"
+        private const val TAG_GPX = "<gpx xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.topografix.com/GPX/1/1\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\" version=\"1.1\" creator=\"PairPlay 기록하기 for android\">"
     }
 }
 
