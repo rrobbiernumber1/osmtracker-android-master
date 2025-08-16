@@ -266,11 +266,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				Log.e(TAG, "DisplayTrackMapWrite - Permission asked")
 				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_STORAGE_DISPLAY_TRACK)
 			}
-			R.id.trackmgr_contextmenu_details -> {
-				i = Intent(this, TrackDetail::class.java)
-				i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, contextMenuSelectedTrackid)
-				startActivity(i)
-			}
+
 		}
 		return super.onContextItemSelected(item)
 	}
@@ -293,10 +289,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 	}
 
 	override fun onClick(trackId: Long) {
-		val i: Intent
-		i = Intent(this, TrackDetail::class.java)
-		i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
-		startActivity(i)
+		// TrackDetail 기능 제거됨 - 트랙 클릭 시 아무 동작 안함
 	}
 
 	@Throws(CreateTrackException::class)

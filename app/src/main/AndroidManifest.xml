@@ -47,9 +47,7 @@
             android:name=".activity.Preferences"
             android:label="@string/prefs" />
 
-        <activity
-            android:name=".activity.TrackDetail"
-            android:label="@string/trackdetail" />
+
 
         <activity
             android:name=".activity.DisplayTrack"

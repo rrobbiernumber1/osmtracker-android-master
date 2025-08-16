@@ -32,7 +32,7 @@
     <string name="trackmgr_contextmenu_share">Share</string>
     
     <string name="trackmgr_contextmenu_display">Display</string>
-    <string name="trackmgr_contextmenu_details">Details</string>
+
     <string name="trackmgr_contextmenu_title">Track #{0}</string>
     <string name="trackmgr_delete_confirm">Track #{0} will be deleted</string>
     <string name="trackmgr_deleteall_confirm">All tracks will be deleted. Are you sure?</string>
@@ -41,24 +41,7 @@
     <string name="trackmgr_export_error">Unable to export track: {0}</string>
     <string name="trackmgr_prepare_for_share_error">Unable to process the track: {0}</string>
 
-    <!-- Track Detail -->
-    <string name="trackdetail">Track Details</string>
-    <string name="trackdetail_startdate">Start time:</string>
-    <string name="trackdetail_enddate">End time:</string>
-    <string name="trackdetail_startloc">Starts at:</string>
-    <string name="trackdetail_endloc">Ends at:</string>
-    <string name="trackdetail_exportdate">Exported:</string>
 
-    <string name="trackdetail_export_notyet">(Not exported yet)</string>
-
-    <string name="trackdetail_name">Name</string>
-    <string name="trackdetail_description">Description</string>
-    <string name="trackdetail_tags">Tags (comma separated)</string>
-    <string name="trackdetail_description_mandatory">You must enter a description</string>
-    <string name="osm_visibility_private">Private</string>
-    <string name="osm_visibility_public">Public</string>
-    <string name="osm_visibility_trackable">Trackable</string>
-    <string name="osm_visibility_identifiable">Identifiable</string>
 
     
 
@@ -119,8 +102,7 @@
     <string name="displaytrack_map">Display background map</string>
     <string name="displaytrack_north">N</string>
 
-    <!-- Track detail -->
-    <string name="trackdetail_save">Save</string>
+
 
     <!-- Various -->
     <string name="various_unit_meters">m</string>
