@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
 
     <!-- Location permissions -->
@@ -43,28 +42,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".activity.TrackLogger"
-            android:label="@string/tracklogger"
-            android:launchMode="singleTop" />
+
         <activity
             android:name=".activity.Preferences"
             android:label="@string/prefs" />
-        <activity
-            android:name=".activity.WaypointList"
-            android:label="@string/wplist" />
+
         <activity
             android:name=".activity.TrackDetail"
             android:label="@string/trackdetail" />
-        
 
         <activity
             android:name=".activity.DisplayTrack"
             android:label="@string/displaytrack" />
-        <activity
-            android:name=".activity.DisplayTrackMap"
-            android:label="@string/displaytrackmap" />
-        
 
         <service
             android:name=".service.gps.GPSLogger"
@@ -79,8 +68,6 @@
             android:name=".db.TrackContentProvider"
             android:authorities="net.osmtracker.provider"
             android:exported="false" />
-
-        
 
         <provider
             android:name="androidx.core.content.FileProvider"

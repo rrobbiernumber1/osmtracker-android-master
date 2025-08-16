@@ -203,7 +203,7 @@ class GPSLogger : Service(), LocationListener {
 			startTrackManager.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
 			val contentIntent = PendingIntent.getActivity(this, 0, startTrackManager, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 			val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-				.setSmallIcon(R.drawable.ic_stat_track)
+				.setSmallIcon(R.drawable.ic_launcher)
 				.setContentTitle(resources.getString(R.string.notification_title).replace("{0}", if (currentTrackId > -1) currentTrackId.toString() else "?"))
 				.setContentText(resources.getString(R.string.notification_text))
 				.setPriority(NotificationCompat.PRIORITY_DEFAULT)
