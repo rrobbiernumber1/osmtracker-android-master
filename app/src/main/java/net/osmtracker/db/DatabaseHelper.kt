@@ -17,7 +17,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 	companion object {
 		private val TAG: String = DatabaseHelper::class.java.simpleName
 		@JvmField val DB_NAME: String = OSMTracker::class.java.simpleName
-		private const val DB_VERSION: Int = 17
+		private const val DB_VERSION: Int = 18
 		private val SQL_CREATE_TABLE_TRACKPOINT: String = "" +
 				"create table " + TrackContentProvider.Schema.TBL_TRACKPOINT + " (" +
 				TrackContentProvider.Schema.COL_ID + " integer primary key autoincrement," +
@@ -27,7 +27,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 				TrackContentProvider.Schema.COL_SPEED + " double null," +
 				TrackContentProvider.Schema.COL_ELEVATION + " double null," +
 				TrackContentProvider.Schema.COL_ACCURACY + " double null," +
-				TrackContentProvider.Schema.COL_TIMESTAMP + " long not null," +
+				TrackContentProvider.Schema.COL_TIMESTAMP + " long not null" +
 				")"
 		private val SQL_CREATE_IDX_TRACKPOINT_TRACK: String = "create index if not exists " +
 				TrackContentProvider.Schema.TBL_TRACKPOINT +
@@ -44,7 +44,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 				TrackContentProvider.Schema.COL_TIMESTAMP + " long not null," +
 				TrackContentProvider.Schema.COL_NAME + " text," +
 				TrackContentProvider.Schema.COL_LINK + " text," +
-				TrackContentProvider.Schema.COL_NBSATELLITES + " integer not null," +
+				TrackContentProvider.Schema.COL_NBSATELLITES + " integer not null" +
 				")"
 		private val SQL_CREATE_IDX_WAYPOINT_TRACK: String = "create index if not exists " +
 				TrackContentProvider.Schema.TBL_WAYPOINT +

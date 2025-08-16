@@ -29,7 +29,7 @@ object OSMTracker {
 		const val VAL_UI_THEME = "net.osmtracker:style/DefaultTheme"
 		const val VAL_GPS_CHECKSTARTUP = true
 		const val VAL_GPS_IGNORE_CLOCK = false
-		const val VAL_GPS_LOGGING_INTERVAL = "0"
+		const val VAL_GPS_LOGGING_INTERVAL = "5"
 		const val VAL_GPS_LOGGING_MIN_DISTANCE = "0"
 
 		const val VAL_OUTPUT_FILENAME_NAME = "name"

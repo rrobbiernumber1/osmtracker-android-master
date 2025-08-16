@@ -82,34 +82,53 @@ open class DataHelper(private val context: Context) {
 	private val contentResolver: ContentResolver by lazy { context.contentResolver }
 
 	fun track(trackId: Long, location: Location) {
-		Log.v(TAG, "Tracking (trackId=$trackId) location: $location")
-		val values = ContentValues()
-		values.put(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
-		values.put(TrackContentProvider.Schema.COL_LATITUDE, location.latitude)
-		values.put(TrackContentProvider.Schema.COL_LONGITUDE, location.longitude)
-		if (location.hasAltitude()) values.put(TrackContentProvider.Schema.COL_ELEVATION, location.altitude)
-		if (location.hasAccuracy()) values.put(TrackContentProvider.Schema.COL_ACCURACY, location.accuracy)
-		if (location.hasSpeed()) values.put(TrackContentProvider.Schema.COL_SPEED, location.speed)
-		val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-		if (prefs.getBoolean(OSMTracker.Preferences.KEY_GPS_IGNORE_CLOCK, OSMTracker.Preferences.VAL_GPS_IGNORE_CLOCK)) {
-			values.put(TrackContentProvider.Schema.COL_TIMESTAMP, System.currentTimeMillis())
-		} else {
-			values.put(TrackContentProvider.Schema.COL_TIMESTAMP, location.time)
-		}
-		val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)
-		contentResolver.insert(Uri.withAppendedPath(trackUri, TrackContentProvider.Schema.TBL_TRACKPOINT + "s"), values)
-	}
-
-	fun wayPoint(trackId: Long, location: Location?, name: String, link: String?, uuid: String?) {
-		Log.d(TAG, "Tracking waypoint '$name', track=$trackId, uuid=$uuid, nbSatellites=" + (location?.extras?.getInt("satellites") ?: 0) + ", link='" + link + "', location=" + location)
-		if (location != null) {
+		Log.d(TAG, "Tracking (trackId=$trackId) location: lat=${location.latitude}, lon=${location.longitude}, accuracy=${location.accuracy}")
+		
+		try {
 			val values = ContentValues()
 			values.put(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
 			values.put(TrackContentProvider.Schema.COL_LATITUDE, location.latitude)
 			values.put(TrackContentProvider.Schema.COL_LONGITUDE, location.longitude)
-			values.put(TrackContentProvider.Schema.COL_NAME, name)
-			values.put(TrackContentProvider.Schema.COL_NBSATELLITES, location.extras?.getInt("satellites") ?: 0)
-			if (uuid != null) values.put(TrackContentProvider.Schema.COL_UUID, uuid)
+			if (location.hasAltitude()) values.put(TrackContentProvider.Schema.COL_ELEVATION, location.altitude)
+			if (location.hasAccuracy()) values.put(TrackContentProvider.Schema.COL_ACCURACY, location.accuracy)
+			if (location.hasSpeed()) values.put(TrackContentProvider.Schema.COL_SPEED, location.speed)
+			
+			val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+			if (prefs.getBoolean(OSMTracker.Preferences.KEY_GPS_IGNORE_CLOCK, OSMTracker.Preferences.VAL_GPS_IGNORE_CLOCK)) {
+				values.put(TrackContentProvider.Schema.COL_TIMESTAMP, System.currentTimeMillis())
+			} else {
+				values.put(TrackContentProvider.Schema.COL_TIMESTAMP, location.time)
+			}
+			
+			val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)
+			val insertUri = Uri.withAppendedPath(trackUri, TrackContentProvider.Schema.TBL_TRACKPOINT + "s")
+			
+			Log.d(TAG, "Inserting trackpoint with URI: $insertUri")
+			val resultUri = contentResolver.insert(insertUri, values)
+			
+			if (resultUri != null) {
+				Log.d(TAG, "Trackpoint inserted successfully with ID: ${ContentUris.parseId(resultUri)}")
+			} else {
+				Log.e(TAG, "Failed to insert trackpoint - resultUri is null")
+			}
+		} catch (e: Exception) {
+			Log.e(TAG, "Error inserting trackpoint for track $trackId", e)
+		}
+	}
+
+	fun wayPoint(trackId: Long, location: Location?, name: String, link: String?, uuid: String?) {
+		Log.d(TAG, "Tracking waypoint '$name', track=$trackId, uuid=$uuid, nbSatellites=" + (location?.extras?.getInt("satellites") ?: 0) + ", link='" + link + "', location=" + location)
+		
+		val values = ContentValues()
+		values.put(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
+		values.put(TrackContentProvider.Schema.COL_NAME, name)
+		values.put(TrackContentProvider.Schema.COL_NBSATELLITES, location?.extras?.getInt("satellites") ?: 0)
+		if (uuid != null) values.put(TrackContentProvider.Schema.COL_UUID, uuid)
+		
+		// location이 있으면 GPS 정보를 추가하고, 없으면 기본값 사용
+		if (location != null) {
+			values.put(TrackContentProvider.Schema.COL_LATITUDE, location.latitude)
+			values.put(TrackContentProvider.Schema.COL_LONGITUDE, location.longitude)
 			if (location.hasAltitude()) values.put(TrackContentProvider.Schema.COL_ELEVATION, location.altitude)
 			if (location.hasAccuracy()) values.put(TrackContentProvider.Schema.COL_ACCURACY, location.accuracy)
 			if (link != null) values.put(TrackContentProvider.Schema.COL_LINK, renameFile(trackId, link, FILENAME_FORMATTER.format(location.time)))
@@ -119,9 +138,16 @@ open class DataHelper(private val context: Context) {
 			} else {
 				values.put(TrackContentProvider.Schema.COL_TIMESTAMP, location.time)
 			}
-			val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)
-			contentResolver.insert(Uri.withAppendedPath(trackUri, TrackContentProvider.Schema.TBL_WAYPOINT + "s"), values)
+		} else {
+			// location이 null일 때는 기본값 사용 (실내에서 GPS 신호가 약할 때)
+			values.put(TrackContentProvider.Schema.COL_LATITUDE, 0.0)
+			values.put(TrackContentProvider.Schema.COL_LONGITUDE, 0.0)
+			values.put(TrackContentProvider.Schema.COL_TIMESTAMP, System.currentTimeMillis())
+			if (link != null) values.put(TrackContentProvider.Schema.COL_LINK, link)
 		}
+		
+		val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)
+		contentResolver.insert(Uri.withAppendedPath(trackUri, TrackContentProvider.Schema.TBL_WAYPOINT + "s"), values)
 	}
 
 	fun updateWayPoint(trackId: Long, uuid: String?, name: String?, link: String?) {

@@ -8,10 +8,13 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.ContentObserver
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.preference.PreferenceManager
 import android.util.Log
 import android.view.ContextMenu
@@ -37,7 +40,7 @@ import net.osmtracker.db.TrackContentProvider
 
 import net.osmtracker.gpx.ExportToStorageTask
 import net.osmtracker.gpx.ExportToTempFileTask
-
+import net.osmtracker.service.gps.GPSLogger
 import net.osmtracker.util.FileSystemUtils
 import java.io.File
 import java.util.Date
@@ -62,6 +65,9 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 	private var TrackLoggerStartIntent: Intent? = null
 	private lateinit var recyclerViewAdapter: TrackListRVAdapter
 	private var hasDivider = false
+	
+	// ContentObserver for real-time updates
+	private lateinit var trackContentObserver: ContentObserver
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -82,21 +88,52 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		dividerItemDecoration.setDrawable(ContextCompat.getDrawable(this, R.drawable.divider)!!)
 		recyclerView.addItemDecoration(dividerItemDecoration)
 
-	 }
+		// Initialize ContentObserver for real-time updates
+		trackContentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+			override fun onChange(selfChange: Boolean, uri: Uri?) {
+				super.onChange(selfChange, uri)
+				// Update UI on main thread
+				runOnUiThread {
+					updateTrackListAndUI()
+				}
+			}
+		}
+	}
 
 	override fun onResume() {
+		super.onResume()
+		// Register ContentObserver
+		contentResolver.registerContentObserver(TrackContentProvider.CONTENT_URI_TRACK, true, trackContentObserver)
+		updateTrackListAndUI()
+	}
+
+	override fun onPause() {
+		super.onPause()
+		// Unregister ContentObserver
+		contentResolver.unregisterContentObserver(trackContentObserver)
+	}
+
+	private fun updateTrackListAndUI() {
 		setRecyclerView()
+		updateEmptyView()
+		updateCurrentTrackId()
+		invalidateOptionsMenu() // Update menu items
+	}
+
+	private fun updateEmptyView() {
 		val emptyView = findViewById<TextView>(R.id.trackmgr_empty)
 		if (recyclerViewAdapter.itemCount == 0) {
 			emptyView.visibility = View.VISIBLE
 		} else {
 			emptyView.visibility = View.INVISIBLE
-			currentTrackId = DataHelper.getActiveTrackId(contentResolver)
-			if (currentTrackId != TRACK_ID_NO_TRACK) {
-				Snackbar.make(findViewById(R.id.trackmgr_fab), resources.getString(R.string.trackmgr_continuetrack_hint).replace("{0}", java.lang.Long.toString(currentTrackId)), Snackbar.LENGTH_LONG).setAction("Action", null).show()
-			}
 		}
-		super.onResume()
+	}
+
+	private fun updateCurrentTrackId() {
+		currentTrackId = DataHelper.getActiveTrackId(contentResolver)
+		if (currentTrackId != TRACK_ID_NO_TRACK) {
+			Snackbar.make(findViewById(R.id.trackmgr_fab), resources.getString(R.string.trackmgr_continuetrack_hint).replace("{0}", java.lang.Long.toString(currentTrackId)), Snackbar.LENGTH_LONG).setAction("Action", null).show()
+		}
 	}
 
 	private fun setRecyclerView() {
@@ -146,13 +183,38 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 	override fun onOptionsItemSelected(item: MenuItem): Boolean {
 		when (item.itemId) {
 			R.id.trackmgr_menu_continuetrack -> {
-				// resume tracking for current active track
-				val intent = Intent(OSMTracker.INTENT_START_TRACKING)
-				intent.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
-				intent.setPackage(this.packageName)
-				sendBroadcast(intent)
+				// GPS 권한 확인
+				if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+					ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), RC_GPS_PERMISSION)
+					return true
+				}
+				
+				// GPSLogger Service 명시적 시작
+				val serviceIntent = Intent(this, GPSLogger::class.java)
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+					startForegroundService(serviceIntent)
+				} else {
+					startService(serviceIntent)
+				}
+				
+				Log.d(TAG, "Continuing GPS tracking for track #$currentTrackId")
+				
+				// Service가 완전히 시작될 때까지 잠시 대기 후 Broadcast 전송
+				Handler(Looper.getMainLooper()).postDelayed({
+					val intent = Intent(OSMTracker.INTENT_START_TRACKING)
+					intent.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
+					intent.setPackage(this.packageName)
+					sendBroadcast(intent)
+					Log.d(TAG, "Broadcast INTENT_START_TRACKING sent for continue track #$currentTrackId")
+				}, 1000) // 1초 지연
+				// Update UI immediately
+				updateTrackListAndUI()
 			}
-			R.id.trackmgr_menu_stopcurrenttrack -> stopActiveTrack()
+			R.id.trackmgr_menu_stopcurrenttrack -> {
+				stopActiveTrack()
+				// Update UI immediately
+				updateTrackListAndUI()
+			}
 			R.id.trackmgr_menu_deletetracks -> AlertDialog.Builder(this)
 				.setTitle(R.string.trackmgr_contextmenu_delete)
 				.setMessage(resources.getString(R.string.trackmgr_deleteall_confirm))
@@ -160,6 +222,8 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				.setIcon(android.R.drawable.ic_dialog_alert)
 				.setPositiveButton(R.string.menu_deletetracks) { dialog: DialogInterface, _: Int ->
 					deleteAllTracks(); dialog.dismiss()
+					// Update UI immediately
+					updateTrackListAndUI()
 				}
 				.setNegativeButton(android.R.string.cancel) { dialog: DialogInterface, _: Int -> dialog.cancel() }
 				.create().show()
@@ -177,12 +241,37 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 
 	private fun startNewTrack() {
 		try {
+			// GPS 권한 확인
+			if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), RC_GPS_PERMISSION)
+				return
+			}
+			
 			currentTrackId = createNewTrack()
-			val intent = Intent(OSMTracker.INTENT_START_TRACKING)
-			intent.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
-			intent.setPackage(this.packageName)
-			sendBroadcast(intent)
+			
+			// GPSLogger Service 명시적 시작
+			val serviceIntent = Intent(this, GPSLogger::class.java)
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+				startForegroundService(serviceIntent)
+			} else {
+				startService(serviceIntent)
+			}
+			
+			Log.d(TAG, "Starting GPS tracking for track #$currentTrackId")
+			
+			// Service가 완전히 시작될 때까지 잠시 대기 후 Broadcast 전송
+			Handler(Looper.getMainLooper()).postDelayed({
+				val intent = Intent(OSMTracker.INTENT_START_TRACKING)
+				intent.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
+				intent.setPackage(this.packageName)
+				sendBroadcast(intent)
+				Log.d(TAG, "Broadcast INTENT_START_TRACKING sent for track #$currentTrackId")
+			}, 1000) // 1초 지연
+			
+			// Update UI immediately
+			updateTrackListAndUI()
 		} catch (e: Exception) {
+			Log.e(TAG, "Error starting new track", e)
 			Toast.makeText(this, resources.getString(R.string.trackmgr_newtrack_error).replace("{0}", e.message ?: ""), Toast.LENGTH_LONG).show()
 		}
 	}
@@ -238,31 +327,74 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 	override fun onContextItemSelected(item: MenuItem): Boolean {
 		var i: Intent
 		when (item.itemId) {
-			R.id.trackmgr_contextmenu_stop -> stopActiveTrack()
+			R.id.trackmgr_contextmenu_stop -> {
+				stopActiveTrack()
+				// Update UI immediately
+				updateTrackListAndUI()
+			}
 			R.id.trackmgr_contextmenu_resume -> {
+				// GPS 권한 확인
+				if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+					ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), RC_GPS_PERMISSION)
+					return true
+				}
+				
 				if (currentTrackId != contextMenuSelectedTrackid) { setActiveTrack(contextMenuSelectedTrackid) }
-				val intent = Intent(OSMTracker.INTENT_START_TRACKING)
-				intent.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, contextMenuSelectedTrackid)
-				intent.setPackage(this.packageName)
-				sendBroadcast(intent)
+				
+				// GPSLogger Service 명시적 시작
+				val serviceIntent = Intent(this, GPSLogger::class.java)
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+					startForegroundService(serviceIntent)
+				} else {
+					startService(serviceIntent)
+				}
+				
+				Log.d(TAG, "Resuming GPS tracking for track #$contextMenuSelectedTrackid")
+				
+				// Service가 완전히 시작될 때까지 잠시 대기 후 Broadcast 전송
+				Handler(Looper.getMainLooper()).postDelayed({
+					val intent = Intent(OSMTracker.INTENT_START_TRACKING)
+					intent.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, contextMenuSelectedTrackid)
+					intent.setPackage(this.packageName)
+					sendBroadcast(intent)
+					Log.d(TAG, "Broadcast INTENT_START_TRACKING sent for resume track #$contextMenuSelectedTrackid")
+				}, 1000) // 1초 지연
+				// Update UI immediately
+				updateTrackListAndUI()
 			}
 			R.id.trackmgr_contextmenu_delete -> AlertDialog.Builder(this)
 				.setTitle(R.string.trackmgr_contextmenu_delete)
 				.setMessage(resources.getString(R.string.trackmgr_delete_confirm).replace("{0}", java.lang.Long.toString(contextMenuSelectedTrackid)))
 				.setCancelable(true)
 				.setIcon(android.R.drawable.ic_dialog_alert)
-				.setPositiveButton(android.R.string.ok) { dialog: DialogInterface, _: Int -> deleteTrack(contextMenuSelectedTrackid); dialog.dismiss() }
+				.setPositiveButton(android.R.string.ok) { dialog: DialogInterface, _: Int -> 
+					deleteTrack(contextMenuSelectedTrackid); dialog.dismiss()
+					// Update UI immediately
+					updateTrackListAndUI()
+				}
 				.setNegativeButton(android.R.string.cancel) { dialog: DialogInterface, _: Int -> dialog.cancel() }
 				.create().show()
-			R.id.trackmgr_contextmenu_export -> if (writeExternalStoragePermissionGranted()) { exportTracks(true) } else {
+			R.id.trackmgr_contextmenu_export -> if (writeExternalStoragePermissionGranted()) { 
+				exportTracks(true)
+				// Update UI immediately after export
+				updateTrackListAndUI()
+			} else {
 				Log.e(TAG, "ExportAsGPXWrite - Permission asked")
 				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_PERMISSIONS_EXPORT_ONE)
 			}
-			R.id.trackmgr_contextmenu_share -> if (writeExternalStoragePermissionGranted()) { prepareAndShareTrack(contextMenuSelectedTrackid, this) } else {
+			R.id.trackmgr_contextmenu_share -> if (writeExternalStoragePermissionGranted()) { 
+				prepareAndShareTrack(contextMenuSelectedTrackid, this)
+				// Update UI immediately after share
+				updateTrackListAndUI()
+			} else {
 				Log.e(TAG, "Share GPX - Permission asked")
 				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_PERMISSIONS_SHARE)
 			}
-			R.id.trackmgr_contextmenu_display -> if (writeExternalStoragePermissionGranted()) { displayTrack(contextMenuSelectedTrackid) } else {
+			R.id.trackmgr_contextmenu_display -> if (writeExternalStoragePermissionGranted()) { 
+				displayTrack(contextMenuSelectedTrackid)
+				// Update UI immediately after display
+				updateTrackListAndUI()
+			} else {
 				Log.e(TAG, "DisplayTrackMapWrite - Permission asked")
 				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_STORAGE_DISPLAY_TRACK)
 			}
@@ -338,7 +470,6 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 
 	private fun deleteTrack(id: Long) {
 		contentResolver.delete(ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, id), null, null)
-		updateTrackItemsInRecyclerView()
 		val trackStorageDirectory = DataHelper.getTrackDirectory(id, this)
 		if (trackStorageDirectory.exists()) {
 			FileSystemUtils.delete(trackStorageDirectory, true)
@@ -346,9 +477,8 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 	}
 
     private fun updateTrackItemsInRecyclerView() {
-        val cursor = recyclerViewAdapter.getCursor()
-        cursor.requery()
-        recyclerViewAdapter.notifyDataSetChanged()
+        // Use the comprehensive update method instead of just cursor requery
+        updateTrackListAndUI()
     }
 
 	private fun deleteAllTracks() {
@@ -367,17 +497,38 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		val values = ContentValues()
 		values.put(TrackContentProvider.Schema.COL_ACTIVE, TrackContentProvider.Schema.VAL_TRACK_ACTIVE)
 		contentResolver.update(TrackContentProvider.CONTENT_URI_TRACK, values, TrackContentProvider.Schema.COL_ID + " = ?", arrayOf(java.lang.Long.toString(trackId)))
+		// Update UI immediately
+		updateTrackListAndUI()
 	}
 
 	private fun stopActiveTrack() {
 		if (currentTrackId != TRACK_ID_NO_TRACK) {
-			val intent = Intent(OSMTracker.INTENT_STOP_TRACKING)
-			intent.setPackage(this.packageName)
-			sendBroadcast(intent)
-			val dataHelper = DataHelper(this)
-			dataHelper.stopTracking(currentTrackId)
-			currentTrackId = TRACK_ID_NO_TRACK
-			updateTrackItemsInRecyclerView()
+			Log.d(TAG, "Stopping active track #$currentTrackId")
+			
+			try {
+				// BroadcastReceiver에 stop 신호 전송
+				val intent = Intent(OSMTracker.INTENT_STOP_TRACKING)
+				intent.setPackage(this.packageName)
+				sendBroadcast(intent)
+				
+				// DB에서 트랙 비활성화
+				val dataHelper = DataHelper(this)
+				dataHelper.stopTracking(currentTrackId)
+				
+				// Service 정지 (안전하게)
+				try {
+					val serviceIntent = Intent(this, GPSLogger::class.java)
+					stopService(serviceIntent)
+					Log.d(TAG, "GPSLogger service stop requested")
+				} catch (e: Exception) {
+					Log.w(TAG, "Error stopping GPSLogger service", e)
+				}
+				
+			} catch (e: Exception) {
+				Log.e(TAG, "Error stopping track", e)
+			} finally {
+				currentTrackId = TRACK_ID_NO_TRACK
+			}
 		}
 	}
 

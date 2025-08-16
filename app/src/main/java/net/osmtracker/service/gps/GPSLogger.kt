@@ -27,6 +27,7 @@ import net.osmtracker.R
 import net.osmtracker.activity.TrackManager
 import net.osmtracker.db.DataHelper
 import net.osmtracker.db.TrackContentProvider
+import android.os.Looper
 
 class GPSLogger : Service(), LocationListener {
 
@@ -41,24 +42,32 @@ class GPSLogger : Service(), LocationListener {
 	private var lastGPSTimestamp: Long = 0
 	private var gpsLoggingInterval: Long = 0
 	private var gpsLoggingMinDistance: Long = 0
+	
+	// Timer for periodic tracking even when GPS signal is weak
+	private var trackingTimer: android.os.Handler? = null
+	private var trackingRunnable: Runnable? = null
 
 	private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
 		override fun onReceive(context: Context, intent: Intent) {
-			Log.v(TAG, "Received intent ${intent.action}")
+			Log.d(TAG, "BroadcastReceiver received intent: ${intent.action}")
 
 			when (intent.action) {
 				OSMTracker.INTENT_TRACK_WP -> {
 					val extras = intent.extras
 					if (extras != null) {
 						if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-							lastLocation = lmgr.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-							lastLocation?.let { loc ->
-								val trackId = extras.getLong(TrackContentProvider.Schema.COL_TRACK_ID)
-								val uuid = extras.getString(OSMTracker.INTENT_KEY_UUID)
-								val name = extras.getString(OSMTracker.INTENT_KEY_NAME)
-								val link = extras.getString(OSMTracker.INTENT_KEY_LINK)
+							// GPS 신호 강도와 관계없이 실내/실외에서 모두 측정 가능하도록 수정
+							val trackId = extras.getLong(TrackContentProvider.Schema.COL_TRACK_ID)
+							val uuid = extras.getString(OSMTracker.INTENT_KEY_UUID)
+							val name = extras.getString(OSMTracker.INTENT_KEY_NAME)
+							val link = extras.getString(OSMTracker.INTENT_KEY_LINK)
 
-								dataHelper.wayPoint(trackId, loc, name ?: "", link, uuid)
+							// lastLocation이 있으면 사용하고, 없으면 null로 waypoint 추가
+							val location = lastLocation ?: lmgr.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+							dataHelper.wayPoint(trackId, location, name ?: "", link, uuid)
+							
+							// location이 있으면 track point도 추가
+							location?.let { loc ->
 								dataHelper.track(trackId, loc)
 							}
 						}
@@ -93,10 +102,16 @@ class GPSLogger : Service(), LocationListener {
 					val extras = intent.extras
 					if (extras != null) {
 						val trackId = extras.getLong(TrackContentProvider.Schema.COL_TRACK_ID)
+						Log.d(TAG, "Received START_TRACKING intent for track ID: $trackId")
 						startTracking(trackId)
+					} else {
+						Log.w(TAG, "START_TRACKING intent received without extras")
 					}
 				}
-				OSMTracker.INTENT_STOP_TRACKING -> stopTrackingAndSave()
+				OSMTracker.INTENT_STOP_TRACKING -> {
+					Log.d(TAG, "Received STOP_TRACKING intent")
+					stopTrackingAndSave()
+				}
 			}
 		}
 	}
@@ -132,23 +147,39 @@ class GPSLogger : Service(), LocationListener {
 		gpsLoggingMinDistance = PreferenceManager.getDefaultSharedPreferences(this.applicationContext)
 			.getString(OSMTracker.Preferences.KEY_GPS_LOGGING_MIN_DISTANCE, OSMTracker.Preferences.VAL_GPS_LOGGING_MIN_DISTANCE)!!.toLong()
 
+		Log.d(TAG, "GPS logging interval: ${gpsLoggingInterval}ms, min distance: ${gpsLoggingMinDistance}m")
+
+		// BroadcastReceiver 등록
 		val filter = IntentFilter()
 		filter.addAction(OSMTracker.INTENT_TRACK_WP)
 		filter.addAction(OSMTracker.INTENT_UPDATE_WP)
 		filter.addAction(OSMTracker.INTENT_DELETE_WP)
 		filter.addAction(OSMTracker.INTENT_START_TRACKING)
 		filter.addAction(OSMTracker.INTENT_STOP_TRACKING)
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-			registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
-		} else {
-			registerReceiver(receiver, filter)
+		
+		try {
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+				registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+			} else {
+				registerReceiver(receiver, filter)
+			}
+			Log.d(TAG, "BroadcastReceiver registered successfully")
+		} catch (e: Exception) {
+			Log.e(TAG, "Failed to register BroadcastReceiver", e)
 		}
 
+		// LocationManager 설정
 		lmgr = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 		if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-			lmgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, gpsLoggingInterval, gpsLoggingMinDistance.toFloat(), this)
+			try {
+				lmgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, gpsLoggingInterval, gpsLoggingMinDistance.toFloat(), this)
+				Log.d(TAG, "Location updates requested successfully")
+			} catch (e: Exception) {
+				Log.e(TAG, "Failed to request location updates", e)
+			}
+		} else {
+			Log.w(TAG, "GPS permission not granted")
 		}
-
 
 		super.onCreate()
 	}
@@ -163,24 +194,132 @@ class GPSLogger : Service(), LocationListener {
 	override fun onDestroy() {
 		Log.v(TAG, "Service onDestroy()")
 		if (isTracking) {
+			Log.d(TAG, "Stopping active tracking before service destruction")
 			stopTrackingAndSave()
 		}
-		lmgr.removeUpdates(this)
-		unregisterReceiver(receiver)
+		// Stop periodic tracking timer
+		stopPeriodicTracking()
+		
+		// Remove location updates
+		try {
+			lmgr.removeUpdates(this)
+			Log.d(TAG, "Location updates removed")
+		} catch (e: Exception) {
+			Log.e(TAG, "Error removing location updates", e)
+		}
+		
+		// Unregister BroadcastReceiver
+		try {
+			unregisterReceiver(receiver)
+			Log.d(TAG, "BroadcastReceiver unregistered")
+		} catch (e: Exception) {
+			Log.e(TAG, "Error unregistering BroadcastReceiver", e)
+		}
+		
 		stopNotifyBackgroundService()
 		super.onDestroy()
 	}
 
 	private fun startTracking(trackId: Long) {
 		currentTrackId = trackId
-		Log.v(TAG, "Starting track logging for track #$trackId")
+		Log.d(TAG, "Starting track logging for track #$trackId")
 		val nmgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 		nmgr.notify(NOTIFICATION_ID, notification)
 		isTracking = true
+		
+		// 즉시 마지막 알려진 위치가 있으면 첫 번째 포인트로 기록
+		if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+			try {
+				val lastKnownLocation = lmgr.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+				if (lastKnownLocation != null) {
+					Log.d(TAG, "Recording initial last known location for track #$trackId")
+					dataHelper.track(trackId, lastKnownLocation)
+					lastLocation = lastKnownLocation
+				} else {
+					Log.d(TAG, "No last known location available, creating indoor entry for track #$trackId")
+					createIndoorLocationEntry()
+				}
+			} catch (e: Exception) {
+				Log.w(TAG, "Error getting last known location", e)
+				createIndoorLocationEntry()
+			}
+		}
+		
+		// Start periodic tracking timer for continuous tracking
+		startPeriodicTracking()
+
+		Log.d(TAG, "Track logging started successfully for track #$trackId")
+	}
+	
+	private fun startPeriodicTracking() {
+		// Stop existing timer if any
+		stopPeriodicTracking()
+		
+		trackingTimer = android.os.Handler(Looper.getMainLooper())
+		trackingRunnable = object : Runnable {
+			override fun run() {
+				if (isTracking && currentTrackId > 0) {
+					Log.d(TAG, "Periodic tracking check for track #$currentTrackId")
+					
+					// Try to get current location, even if weak
+					if (ContextCompat.checkSelfPermission(this@GPSLogger, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+						try {
+							val currentLocation = lmgr.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+							if (currentLocation != null) {
+								// Use current GPS location
+								Log.d(TAG, "Recording GPS location: lat=${currentLocation.latitude}, lon=${currentLocation.longitude}")
+								dataHelper.track(currentTrackId, currentLocation)
+								lastLocation = currentLocation
+							} else if (lastLocation != null) {
+								// Use last known location if no current fix
+								Log.d(TAG, "Recording last known location: lat=${lastLocation!!.latitude}, lon=${lastLocation!!.longitude}")
+								dataHelper.track(currentTrackId, lastLocation!!)
+							} else {
+								// Create a basic location entry for indoor tracking
+								Log.d(TAG, "No GPS signal, creating indoor location entry")
+								createIndoorLocationEntry()
+							}
+						} catch (e: Exception) {
+							Log.e(TAG, "Error in periodic tracking", e)
+							createIndoorLocationEntry()
+						}
+					}
+					
+					// Schedule next tracking
+					trackingTimer?.postDelayed(this, gpsLoggingInterval)
+				} else {
+					Log.d(TAG, "Stopping periodic tracking - isTracking: $isTracking, currentTrackId: $currentTrackId")
+				}
+			}
+		}
+		
+		// Start the timer
+		trackingTimer?.postDelayed(trackingRunnable!!, gpsLoggingInterval)
+	}
+	
+	private fun stopPeriodicTracking() {
+		trackingRunnable?.let { runnable ->
+			trackingTimer?.removeCallbacks(runnable)
+		}
+		trackingTimer = null
+		trackingRunnable = null
+	}
+	
+	private fun createIndoorLocationEntry() {
+		// Create a basic location entry for indoor tracking when no GPS signal
+		val indoorLocation = Location(LocationManager.GPS_PROVIDER)
+		indoorLocation.latitude = 0.0
+		indoorLocation.longitude = 0.0
+		indoorLocation.time = System.currentTimeMillis()
+		indoorLocation.accuracy = 1000.0f // High uncertainty for indoor
+		
+		dataHelper.track(currentTrackId, indoorLocation)
 	}
 
 	private fun stopTrackingAndSave() {
 		isTracking = false
+		// Stop periodic tracking timer
+		stopPeriodicTracking()
 		dataHelper.stopTracking(currentTrackId)
 		currentTrackId = -1
 		stopSelf()
@@ -188,10 +327,15 @@ class GPSLogger : Service(), LocationListener {
 
 	override fun onLocationChanged(location: Location) {
 		isGpsEnabled = true
-		if (lastGPSTimestamp + gpsLoggingInterval < System.currentTimeMillis()) {
-			lastGPSTimestamp = System.currentTimeMillis()
-			lastLocation = location
-			if (isTracking) {
+		lastLocation = location
+
+		Log.d("rrobbie", "onLocationChanged : ${isTracking}")
+		
+		// Always record location when GPS signal is available, regardless of interval
+		if (isTracking) {
+			// Check if enough time has passed since last recording
+			if (lastGPSTimestamp + gpsLoggingInterval < System.currentTimeMillis()) {
+				lastGPSTimestamp = System.currentTimeMillis()
 				dataHelper.track(currentTrackId, location)
 			}
 		}

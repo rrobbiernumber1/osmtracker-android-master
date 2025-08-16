@@ -36,7 +36,7 @@
 			android:key="gps.logging.interval"
 			android:title="@string/prefs_gps_logging_interval"
 			android:summary="@string/prefs_gps_logging_interval_summary"
-			android:defaultValue="0"
+			android:defaultValue="1"
 			android:inputType="number" />
 		<EditTextPreference
 			android:key="gps.logging.min_distance"
