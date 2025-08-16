@@ -66,6 +66,8 @@ class TrackListRVAdapter(
 	}
 
 	override fun getItemCount(): Int {
+	R.drawable.next
+
 		return cursor.count
 	}
 

@@ -49,7 +49,7 @@
 			android:layout_gravity="end|bottom"
 			android:layout_margin="16dp"
 			android:contentDescription="@string/trackmgr_newtrack_hint"
-			android:src="@drawable/ic_fab_add_track" />
+			android:src="@drawable/ic_launcher" />
 
 	</androidx.coordinatorlayout.widget.CoordinatorLayout>
 

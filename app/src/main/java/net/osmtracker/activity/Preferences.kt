@@ -12,7 +12,6 @@ import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.Button
-import android.widget.EditText
 import android.widget.ListView
 import net.osmtracker.OSMTracker
 import net.osmtracker.R
@@ -22,7 +21,6 @@ class Preferences : PreferenceActivity() {
 
 	companion object {
 		const val LAYOUTS_SUBDIR = "layouts"
-		const val LAYOUT_FILE_EXTENSION = ".xml"
 		const val ICONS_DIR_SUFFIX = "_icons"
 	}
 
@@ -75,7 +73,7 @@ class Preferences : PreferenceActivity() {
 			startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
 			true
 		}
-		var orientationPref: Preference = findPreference(OSMTracker.Preferences.KEY_UI_ORIENTATION)
+		val orientationPref: Preference = findPreference(OSMTracker.Preferences.KEY_UI_ORIENTATION)
 		val orientationListPreference = orientationPref as ListPreference
 		val displayValueKey = prefs.getString(OSMTracker.Preferences.KEY_UI_ORIENTATION, OSMTracker.Preferences.VAL_UI_ORIENTATION)
 		val displayValueIndex = orientationListPreference.findIndexOfValue(displayValueKey)
@@ -88,7 +86,6 @@ class Preferences : PreferenceActivity() {
 			preference.summary = newPreferenceDisplayValue + ".\n" + resources.getString(R.string.prefs_ui_orientation_summary)
 			true
 		}
-        // OSM 인증 초기화 옵션 제거됨
 	}
 }
 

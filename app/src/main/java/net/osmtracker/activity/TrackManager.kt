@@ -77,9 +77,6 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		// Intro 기능 제거됨
 		val recyclerView = findViewById<RecyclerView>(R.id.recyclerview)
 		recyclerView.layoutManager = LinearLayoutManager(this)
-		val dividerItemDecoration = DividerItemDecoration(recyclerView.context, DividerItemDecoration.VERTICAL)
-		dividerItemDecoration.setDrawable(ContextCompat.getDrawable(this, R.drawable.divider)!!)
-		recyclerView.addItemDecoration(dividerItemDecoration)
 
 		// Initialize ContentObserver for real-time updates
 		trackContentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {

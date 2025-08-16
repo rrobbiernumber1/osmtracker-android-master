@@ -4,19 +4,6 @@
     <string name="app_name">OSMTracker for Android™</string>
     <string name="app_description">Inspired by OSMTracker on Windows Mobile, it allows you to track your journeys, mark significant way points, export them in GPX format for later use with Open Street Map tools like JOSM.</string>
 
-    <!-- TrackLogger -->
-    <string name="tracklogger">Track logger</string>
-
-
-    <!-- Waypoint List -->
-    <string name="wplist">Waypoint list</string>
-    <string name="wplist_latitude">Lat: </string>
-    <string name="wplist_longitude">Long: </string>
-    <string name="wplist_elevation">Ele: </string>
-    <string name="wplist_accuracy">Accur: </string>
-    <string name="wplist_compass">Comp. head.:</string>
-    <string name="wplist_compass_accuracy">Comp. accur.:</string>
-
     <!-- Track Manager -->
     <string name="trackmgr_tracklist">Track list:</string>
     <string name="trackmgr_waypoints_count">Waypoints: </string>
@@ -30,8 +17,6 @@
     <string name="trackmgr_contextmenu_delete">Delete</string>
     <string name="trackmgr_contextmenu_export">Export</string>
     <string name="trackmgr_contextmenu_share">Share</string>
-    
-
 
     <string name="trackmgr_contextmenu_title">Track #{0}</string>
     <string name="trackmgr_delete_confirm">Track #{0} will be deleted</string>
@@ -45,20 +30,7 @@
 
     
 
-    <!-- GPS Status & record bar -->
-    
-    <string name="gpsstatus_record_textnote">Text note</string>
 
-    <!-- edit_waypoint_dialog -->
-    <string name="waypoint_name_label">Waypoint Name/text</string>
-    <string name="edit_waypoint_bt_preview">Open file</string>
-    <string name="edit_waypoint_bt_save">Save</string>
-    <string name="edit_waypoint_bt_delete">Delete</string>
-    <string name="edit_waypoint_bt_cancel">Cancel</string>
-    <string name="delete_waypoint_confirm_dialog_title">Delete waypoint</string>
-    <string name="delete_waypoint_confirm_dialog_msg">Delete this waypoint?</string>
-    <string name="delete_waypoint_confirm_bt_ok">Delete</string>
-    <string name="delete_waypoint_confirm_bt_cancel">Cancel</string>
 
     <!-- Menu -->
     <string name="menu_settings">Settings</string>
@@ -71,7 +43,7 @@
     <string name="menu_cancel">Cancel</string>
     <string name="menu_export">Export as GPX</string>
     
-    <string name="menu_center_to_gps">Center to GPS</string>
+
 
 
     <!-- Errors -->
@@ -84,36 +56,20 @@
 
     <string name="storage_permission_for_share_track">To share the track properly we need access to the storage.</string>
     
-    <string name="acccept">Accept</string>
+
 
     <!-- GPX -->
     <string name="gpx_track_name">Tracked with OSMTracker for Android™</string>
     <string name="gpx_hdop_approximation_cmt">Warning: HDOP values aren\'t the HDOP as returned by the GPS device. They\'re approximated from the location accuracy in meters.</string>
 
-    <!-- About screen -->
-    <!-- About strings removed -->
-
     <!-- Notification -->
     <string name="notification_title">OSMTracker is tracking (#{0})</string>
     <string name="notification_text">Tap here to display main screen</string>
 
-
-
-
-
     <!-- Various -->
     <string name="various_unit_meters">m</string>
     <string name="various_accuracy">Accuracy</string>
-    <string name="various_accuracy_with_sats">Accuracy {0}{1} ({2}/{3})</string> <!-- parameters: (accuracy, meters, used sats, visible sats) -->
-    <string name="various_waiting_gps_fix">Waiting for GPS fix&#8230; ({0}/{1})</string> <!-- parameters: (used sats, visible sats) -->
-    <string name="various_heading_display">{0}&#176;</string> <!-- parameters: (heading in degrees) -->
-    <string name="various_heading">Wait for heading&#8230;</string>
-    <string name="various_heading_unknown">Heading can\'t be determined</string>
+
     <string name="various_export_finished">Export process finished successfully</string>
 
-
-
-    
-
-    <!-- Intro strings removed -->
 </resources>

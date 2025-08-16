@@ -99,7 +99,6 @@
 			android:key="ui.theme"
 			android:summary="@string/prefs_theme_summary"
 			android:defaultValue="@style/DefaultTheme" />
-		
 
 		<ListPreference
 			android:defaultValue="none"
