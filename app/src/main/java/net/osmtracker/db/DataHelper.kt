@@ -23,12 +23,7 @@ open class DataHelper(private val context: Context) {
 	companion object {
 		private val TAG: String = DataHelper::class.java.simpleName
 		const val EXTENSION_GPX = ".gpx"
-		const val EXTENSION_3GPP = ".3gpp"
-		const val EXTENSION_JPG = ".jpg"
-		const val EXTENSION_ZIP = ".zip"
 		const val MIME_TYPE_GPX = "application/gpx+xml"
-		const val MIME_TYPE_AUDIO = "audio/*"
-		const val MIME_TYPE_IMAGE = "image/*"
 		const val FILE_PROVIDER_AUTHORITY = "net.osmtracker.fileprovider"
 		private const val MAX_RENAME_ATTEMPTS = 20
 		@JvmField val FILENAME_FORMATTER = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss")
@@ -45,12 +40,22 @@ open class DataHelper(private val context: Context) {
 			values.put(TrackContentProvider.Schema.COL_NAME, name)
 			cr.update(trackUri, values, null, null)
 		}
-		@JvmStatic fun setTrackExportDate(trackId: Long, exportTime: Long, cr: ContentResolver) {
-			val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)
-			val values = ContentValues()
-			values.put(TrackContentProvider.Schema.COL_EXPORT_DATE, exportTime)
-			cr.update(trackUri, values, null, null)
-		}
+			@JvmStatic fun setTrackExportDate(trackId: Long, exportTime: Long, cr: ContentResolver) {
+		val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)
+		val values = ContentValues()
+		values.put(TrackContentProvider.Schema.COL_EXPORT_DATE, exportTime)
+		cr.update(trackUri, values, null, null)
+	}
+	
+	@JvmStatic fun updateTrackRealtimeStats(trackId: Long, totalTime: Long, movingTime: Long, elevationGain: Double, activityType: String, cr: ContentResolver) {
+		val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)
+		val values = ContentValues()
+		values.put(TrackContentProvider.Schema.COL_TOTAL_TIME, totalTime)
+		values.put(TrackContentProvider.Schema.COL_MOVING_TIME, movingTime)
+		values.put(TrackContentProvider.Schema.COL_ELEVATION_GAIN, elevationGain)
+		values.put(TrackContentProvider.Schema.COL_ACTIVITY_TYPE, activityType)
+		cr.update(trackUri, values, null, null)
+	}
         // OSM 업로드 일자 설정은 더 이상 사용하지 않음
 		@JvmStatic fun getTrackDirFromDB(cr: ContentResolver, trackId: Long): File? {
 			var trackDir: File? = null
@@ -92,12 +97,30 @@ open class DataHelper(private val context: Context) {
 			if (location.hasAltitude()) values.put(TrackContentProvider.Schema.COL_ELEVATION, location.altitude)
 			if (location.hasAccuracy()) values.put(TrackContentProvider.Schema.COL_ACCURACY, location.accuracy)
 			if (location.hasSpeed()) values.put(TrackContentProvider.Schema.COL_SPEED, location.speed)
+			values.put(TrackContentProvider.Schema.COL_TRACK_SEGMENT_ID, 0) // 기본 세그먼트 ID
 			
 			val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 			if (prefs.getBoolean(OSMTracker.Preferences.KEY_GPS_IGNORE_CLOCK, OSMTracker.Preferences.VAL_GPS_IGNORE_CLOCK)) {
 				values.put(TrackContentProvider.Schema.COL_TIMESTAMP, System.currentTimeMillis())
 			} else {
 				values.put(TrackContentProvider.Schema.COL_TIMESTAMP, location.time)
+			}
+			
+			// iOS Core Data 구조에 맞춰 serialized 데이터 생성
+			try {
+				val gpxData = org.json.JSONObject().apply {
+					put("latitude", location.latitude)
+					put("longitude", location.longitude)
+					if (location.hasAltitude()) put("elevation", location.altitude)
+					if (location.hasAccuracy()) put("accuracy", location.accuracy)
+					if (location.hasSpeed()) put("speed", location.speed)
+					put("time", values.getAsLong(TrackContentProvider.Schema.COL_TIMESTAMP))
+				}
+				val serializedData = gpxData.toString().toByteArray()
+				values.put(TrackContentProvider.Schema.COL_SERIALIZED, serializedData)
+			} catch (e: Exception) {
+				Log.e(TAG, "Error creating serialized data for trackpoint", e)
+				// serialized 데이터 생성 실패 시에도 트래킹은 계속 진행
 			}
 			
 			val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)
@@ -144,6 +167,31 @@ open class DataHelper(private val context: Context) {
 			values.put(TrackContentProvider.Schema.COL_LONGITUDE, 0.0)
 			values.put(TrackContentProvider.Schema.COL_TIMESTAMP, System.currentTimeMillis())
 			if (link != null) values.put(TrackContentProvider.Schema.COL_LINK, link)
+		}
+		
+		// iOS Core Data 구조에 맞춰 serialized 데이터 생성
+		try {
+			val gpxData = org.json.JSONObject().apply {
+				put("latitude", values.getAsDouble(TrackContentProvider.Schema.COL_LATITUDE))
+				put("longitude", values.getAsDouble(TrackContentProvider.Schema.COL_LONGITUDE))
+				if (values.containsKey(TrackContentProvider.Schema.COL_ELEVATION)) {
+					put("elevation", values.getAsDouble(TrackContentProvider.Schema.COL_ELEVATION))
+				}
+				if (values.containsKey(TrackContentProvider.Schema.COL_ACCURACY)) {
+					put("accuracy", values.getAsDouble(TrackContentProvider.Schema.COL_ACCURACY))
+				}
+				put("name", name)
+				put("time", values.getAsLong(TrackContentProvider.Schema.COL_TIMESTAMP))
+				if (values.containsKey(TrackContentProvider.Schema.COL_LINK)) {
+					put("link", values.getAsString(TrackContentProvider.Schema.COL_LINK))
+				}
+				put("nbSatellites", values.getAsInteger(TrackContentProvider.Schema.COL_NBSATELLITES))
+			}
+			val serializedData = gpxData.toString().toByteArray()
+			values.put(TrackContentProvider.Schema.COL_SERIALIZED, serializedData)
+		} catch (e: Exception) {
+			Log.e(TAG, "Error creating serialized data for waypoint", e)
+			// serialized 데이터 생성 실패 시에도 waypoint 추가는 계속 진행
 		}
 		
 		val trackUri = ContentUris.withAppendedId(TrackContentProvider.CONTENT_URI_TRACK, trackId)

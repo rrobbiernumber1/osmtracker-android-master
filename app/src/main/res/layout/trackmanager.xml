@@ -51,15 +51,6 @@
 			android:contentDescription="@string/trackmgr_newtrack_hint"
 			android:src="@drawable/ic_fab_add_track" />
 
-		<com.google.android.material.floatingactionbutton.FloatingActionButton
-			android:id="@+id/trackmgr_fab_text_wp"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:layout_gravity="start|bottom"
-			android:layout_margin="16dp"
-			android:contentDescription="@string/gpsstatus_record_textnote"
-			android:src="@android:drawable/ic_menu_edit" />
-
 	</androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 </LinearLayout>

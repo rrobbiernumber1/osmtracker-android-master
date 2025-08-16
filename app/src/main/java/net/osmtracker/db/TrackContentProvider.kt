@@ -21,6 +21,7 @@ open class TrackContentProvider : ContentProvider() {
 		@JvmField val CONTENT_URI_WAYPOINT: Uri = Uri.parse("content://" + AUTHORITY + "/" + Schema.TBL_WAYPOINT)
 		@JvmField val CONTENT_URI_WAYPOINT_UUID: Uri = Uri.parse("content://" + AUTHORITY + "/" + Schema.TBL_WAYPOINT + "/uuid")
 		@JvmField val CONTENT_URI_TRACKPOINT: Uri = Uri.parse("content://" + AUTHORITY + "/" + Schema.TBL_TRACKPOINT)
+		@JvmField val CONTENT_URI_GPX_SESSION: Uri = Uri.parse("content://" + AUTHORITY + "/" + Schema.TBL_GPX_SESSION)
 		private const val TRACK_TABLES: String = Schema.TBL_TRACK + " left join " + Schema.TBL_TRACKPOINT + " on " + Schema.TBL_TRACK + "." + Schema.COL_ID + " = " + Schema.TBL_TRACKPOINT + "." + Schema.COL_TRACK_ID
 		private val TRACK_TABLES_PROJECTION: Array<String> = arrayOf(
 				Schema.TBL_TRACK + "." + Schema.COL_ID + " as " + Schema.COL_ID,
@@ -32,8 +33,8 @@ open class TrackContentProvider : ContentProvider() {
 				Schema.COL_DESCRIPTION,
 				Schema.COL_TAGS,
 				Schema.COL_START_DATE,
-				"count(" + Schema.TBL_TRACKPOINT + "." + Schema.COL_ID + ") as " + Schema.COL_TRACKPOINT_COUNT,
-				"(SELECT count(" + Schema.TBL_WAYPOINT + "." + Schema.COL_TRACK_ID + ") FROM " + Schema.TBL_WAYPOINT + " WHERE " + Schema.TBL_WAYPOINT + "." + Schema.COL_TRACK_ID + " = " + Schema.TBL_TRACK + "." + Schema.COL_ID + ") as " + Schema.COL_WAYPOINT_COUNT
+				"count(" + Schema.TBL_TRACKPOINT + "." + Schema.COL_TRACKPOINT_ID + ") as " + Schema.COL_TRACKPOINT_COUNT,
+				"(SELECT count(" + Schema.TBL_WAYPOINT + "." + Schema.COL_WAYPOINT_ID + ") FROM " + Schema.TBL_WAYPOINT + " WHERE " + Schema.TBL_WAYPOINT + "." + Schema.COL_TRACK_ID + " = " + Schema.TBL_TRACK + "." + Schema.COL_ID + ") as " + Schema.COL_WAYPOINT_COUNT
 		)
 		private const val TRACK_TABLES_GROUP_BY: String = Schema.TBL_TRACK + "." + Schema.COL_ID
 		private val uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
@@ -47,6 +48,8 @@ open class TrackContentProvider : ContentProvider() {
 			addURI(AUTHORITY, Schema.TBL_WAYPOINT + "/#", Schema.URI_CODE_WAYPOINT_ID)
 			addURI(AUTHORITY, Schema.TBL_WAYPOINT + "/uuid/*", Schema.URI_CODE_WAYPOINT_UUID)
 			addURI(AUTHORITY, Schema.TBL_TRACKPOINT + "/#", Schema.URI_CODE_TRACKPOINT_ID)
+			addURI(AUTHORITY, Schema.TBL_GPX_SESSION, Schema.URI_CODE_GPX_SESSION)
+			addURI(AUTHORITY, Schema.TBL_GPX_SESSION + "/#", Schema.URI_CODE_GPX_SESSION_ID)
 		}
 		@JvmStatic fun waypointsUri(trackId: Long): Uri = Uri.withAppendedPath(ContentUris.withAppendedId(CONTENT_URI_TRACK, trackId), Schema.TBL_WAYPOINT + "s")
 		@JvmStatic fun waypointUri(waypointId: Long): Uri = ContentUris.withAppendedId(CONTENT_URI_WAYPOINT, waypointId)
@@ -77,6 +80,11 @@ open class TrackContentProvider : ContentProvider() {
 				val uuid = uri.lastPathSegment
 				if (uuid != null) dbHelper.writableDatabase.delete(Schema.TBL_WAYPOINT, Schema.COL_UUID + " = ?", arrayOf(uuid)) else 0
 			}
+			Schema.URI_CODE_GPX_SESSION -> dbHelper.writableDatabase.delete(Schema.TBL_GPX_SESSION, selection, selectionArgs)
+			Schema.URI_CODE_GPX_SESSION_ID -> {
+				val sessionId = ContentUris.parseId(uri).toString()
+				dbHelper.writableDatabase.delete(Schema.TBL_GPX_SESSION, Schema.COL_SESSION_ID + " = ?", arrayOf(sessionId))
+			}
 			else -> throw IllegalArgumentException("Unknown URI: $uri")
 		}
 		context!!.contentResolver.notifyChange(uri, null)
@@ -89,6 +97,7 @@ open class TrackContentProvider : ContentProvider() {
 			Schema.URI_CODE_TRACK_TRACKPOINTS -> ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd." + OSMTracker.PACKAGE_NAME + "." + Schema.TBL_TRACKPOINT
 			Schema.URI_CODE_TRACK_WAYPOINTS -> ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd." + OSMTracker.PACKAGE_NAME + "." + Schema.TBL_WAYPOINT
 			Schema.URI_CODE_TRACK -> ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd." + OSMTracker.PACKAGE_NAME + "." + Schema.TBL_TRACK
+			Schema.URI_CODE_GPX_SESSION -> ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd." + OSMTracker.PACKAGE_NAME + "." + Schema.TBL_GPX_SESSION
 			else -> throw IllegalArgumentException("Unknown URL: $uri")
 		}
 	}
@@ -102,8 +111,10 @@ open class TrackContentProvider : ContentProvider() {
 				if (v.containsKey(Schema.COL_TRACK_ID) && v.containsKey(Schema.COL_LONGITUDE) && v.containsKey(Schema.COL_LATITUDE) && v.containsKey(Schema.COL_TIMESTAMP)) {
 					val rowId = dbHelper.writableDatabase.insert(Schema.TBL_TRACKPOINT, null, v)
 					if (rowId > 0) {
-						val trackpointUri = ContentUris.withAppendedId(uri, rowId)
+						val trackpointUri = ContentUris.withAppendedId(CONTENT_URI_TRACKPOINT, rowId)
+						// 트래킹 포인트 추가 시 트랙 목록도 업데이트
 						context!!.contentResolver.notifyChange(trackpointUri, null)
+						context!!.contentResolver.notifyChange(CONTENT_URI_TRACK, null)
 						trackpointUri
 					} else null
 				} else throw IllegalArgumentException("values should provide ${Schema.COL_LONGITUDE}, ${Schema.COL_LATITUDE}, ${Schema.COL_TIMESTAMP}")
@@ -112,8 +123,10 @@ open class TrackContentProvider : ContentProvider() {
 				if (v.containsKey(Schema.COL_TRACK_ID) && v.containsKey(Schema.COL_LONGITUDE) && v.containsKey(Schema.COL_LATITUDE) && v.containsKey(Schema.COL_TIMESTAMP)) {
 					val rowId = dbHelper.writableDatabase.insert(Schema.TBL_WAYPOINT, null, v)
 					if (rowId > 0) {
-						val waypointUri = ContentUris.withAppendedId(uri, rowId)
+						val waypointUri = ContentUris.withAppendedId(CONTENT_URI_WAYPOINT, rowId)
+						// waypoint 추가 시 트랙 목록도 업데이트
 						context!!.contentResolver.notifyChange(waypointUri, null)
+						context!!.contentResolver.notifyChange(CONTENT_URI_TRACK, null)
 						waypointUri
 					} else null
 				} else throw IllegalArgumentException("values should provide ${Schema.COL_LONGITUDE}, ${Schema.COL_LATITUDE}, ${Schema.COL_TIMESTAMP}")
@@ -127,6 +140,14 @@ open class TrackContentProvider : ContentProvider() {
 						trackUri
 					} else null
 				} else throw IllegalArgumentException("values should provide ${Schema.COL_START_DATE}")
+			}
+			Schema.URI_CODE_GPX_SESSION -> {
+				val rowId = dbHelper.writableDatabase.insert(Schema.TBL_GPX_SESSION, null, v)
+				if (rowId > 0) {
+					val sessionUri = ContentUris.withAppendedId(CONTENT_URI_GPX_SESSION, rowId)
+					context!!.contentResolver.notifyChange(sessionUri, null)
+					sessionUri
+				} else null
 			}
 			else -> throw IllegalArgumentException("Unknown URI: $uri")
 		}
@@ -164,7 +185,7 @@ open class TrackContentProvider : ContentProvider() {
 				qb.tables = Schema.TBL_TRACKPOINT
 				selection = Schema.COL_TRACK_ID + " = ?"
 				selectionArgs = arrayOf(trackId)
-				sortOrder = Schema.COL_ID + " asc"
+				sortOrder = Schema.COL_TRACKPOINT_ID + " asc"
 				limit = "1"
 			}
 			Schema.URI_CODE_TRACK_END -> {
@@ -173,7 +194,7 @@ open class TrackContentProvider : ContentProvider() {
 				qb.tables = Schema.TBL_TRACKPOINT
 				selection = Schema.COL_TRACK_ID + " = ?"
 				selectionArgs = arrayOf(trackId)
-				sortOrder = Schema.COL_ID + " desc"
+				sortOrder = Schema.COL_TRACKPOINT_ID + " desc"
 				limit = "1"
 			}
 			Schema.URI_CODE_TRACK -> {
@@ -200,15 +221,25 @@ open class TrackContentProvider : ContentProvider() {
 				if (selectionIn != null || selectionArgsIn != null) throw UnsupportedOperationException()
 				val wayPointId = uri.lastPathSegment!!
 				qb.tables = Schema.TBL_WAYPOINT
-				selection = Schema.TBL_WAYPOINT + "." + Schema.COL_ID + " = ?"
+				selection = Schema.TBL_WAYPOINT + "." + Schema.COL_WAYPOINT_ID + " = ?"
 				selectionArgs = arrayOf(wayPointId)
 			}
 			Schema.URI_CODE_TRACKPOINT_ID -> {
 				if (selectionIn != null || selectionArgsIn != null) throw UnsupportedOperationException()
 				val trackPointId = uri.lastPathSegment!!
 				qb.tables = Schema.TBL_TRACKPOINT
-				selection = Schema.TBL_TRACKPOINT + "." + Schema.COL_ID + " = ?"
+				selection = Schema.TBL_TRACKPOINT + "." + Schema.COL_TRACKPOINT_ID + " = ?"
 				selectionArgs = arrayOf(trackPointId)
+			}
+			Schema.URI_CODE_GPX_SESSION -> {
+				qb.tables = Schema.TBL_GPX_SESSION
+			}
+			Schema.URI_CODE_GPX_SESSION_ID -> {
+				if (selectionIn != null || selectionArgsIn != null) throw UnsupportedOperationException()
+				val sessionId = uri.lastPathSegment!!
+				qb.tables = Schema.TBL_GPX_SESSION
+				selection = Schema.TBL_GPX_SESSION + "." + Schema.COL_SESSION_ID + " = ?"
+				selectionArgs = arrayOf(sessionId)
 			}
 			else -> throw IllegalArgumentException("Unknown URI: $uri")
 		}
@@ -225,6 +256,8 @@ open class TrackContentProvider : ContentProvider() {
 			Schema.URI_CODE_TRACK_ID -> if (selectionIn != null || selectionArgsIn != null) throw UnsupportedOperationException() else Triple(Schema.TBL_TRACK, Schema.COL_ID + " = ?", arrayOf(uri.lastPathSegment!!))
 			Schema.URI_CODE_TRACK_ACTIVE -> if (selectionIn != null || selectionArgsIn != null) throw UnsupportedOperationException() else Triple(Schema.TBL_TRACK, Schema.COL_ACTIVE + " = ?", arrayOf(Integer.toString(Schema.VAL_TRACK_ACTIVE)))
 			Schema.URI_CODE_TRACK -> Triple(Schema.TBL_TRACK, selectionIn, selectionArgsIn)
+			Schema.URI_CODE_GPX_SESSION -> Triple(Schema.TBL_GPX_SESSION, selectionIn, selectionArgsIn)
+			Schema.URI_CODE_GPX_SESSION_ID -> if (selectionIn != null || selectionArgsIn != null) throw UnsupportedOperationException() else Triple(Schema.TBL_GPX_SESSION, Schema.COL_SESSION_ID + " = ?", arrayOf(uri.lastPathSegment!!))
 			else -> throw IllegalArgumentException("Unknown URI: $uri")
 		}
 		val rows = dbHelper.writableDatabase.update(table, v, selection, selectionArgs)
@@ -234,9 +267,13 @@ open class TrackContentProvider : ContentProvider() {
 
 	class Schema {
 		companion object {
+			// 테이블명
+			const val TBL_GPX_SESSION = "gpx_session"
 			const val TBL_TRACKPOINT = "trackpoint"
 			const val TBL_WAYPOINT = "waypoint"
 			const val TBL_TRACK = "track"
+			
+			// 공통 컬럼
 			const val COL_ID = "_id"
 			const val COL_TRACK_ID = "track_id"
 			const val COL_UUID = "uuid"
@@ -259,6 +296,29 @@ open class TrackContentProvider : ContentProvider() {
             const val COL_OSM_UPLOAD_DATE = "osm_upload_date"
 			const val COL_TRACKPOINT_COUNT = "tp_count"
 			const val COL_WAYPOINT_COUNT = "wp_count"
+			
+			// GpxSession 테이블 컬럼 (CDRoot 엔티티 대응)
+			const val COL_SESSION_ID = "session_id"
+			const val COL_CONTINUED_AFTER_SAVE = "continued_after_save"
+			const val COL_LAST_FILE_NAME = "last_file_name"
+			const val COL_LAST_TRACK_SEGMENT_ID = "last_track_segment_id"
+			
+			// GpxTrackpoint 테이블 컬럼 (CDTrackpoint 엔티티 대응)
+			const val COL_TRACKPOINT_ID = "trackpoint_id"
+			const val COL_TRACK_SEGMENT_ID = "track_segment_id"
+			const val COL_SERIALIZED = "serialized"
+			
+			// GpxWaypoint 테이블 컬럼 (CDWaypoint 엔티티 대응)
+			const val COL_WAYPOINT_ID = "waypoint_id"
+			const val COL_DESC = "desc"
+			
+			// Track 테이블 실시간 통계 컬럼
+			const val COL_TOTAL_TIME = "total_time"
+			const val COL_MOVING_TIME = "moving_time"
+			const val COL_ELEVATION_GAIN = "elevation_gain"
+			const val COL_ACTIVITY_TYPE = "activity_type"
+			
+			// URI 코드
 			const val URI_CODE_TRACK = 3
 			const val URI_CODE_TRACK_ID = 4
 			const val URI_CODE_TRACK_WAYPOINTS = 5
@@ -269,6 +329,10 @@ open class TrackContentProvider : ContentProvider() {
 			const val URI_CODE_TRACK_END = 10
 			const val URI_CODE_WAYPOINT_ID = 11
 			const val URI_CODE_TRACKPOINT_ID = 12
+			const val URI_CODE_GPX_SESSION = 13
+			const val URI_CODE_GPX_SESSION_ID = 14
+			
+			// 값 상수
 			const val VAL_TRACK_ACTIVE = 1
 			const val VAL_TRACK_INACTIVE = 0
 		}

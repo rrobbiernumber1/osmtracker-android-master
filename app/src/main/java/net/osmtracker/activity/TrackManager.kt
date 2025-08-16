@@ -9,13 +9,12 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.ContentObserver
-import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.preference.PreferenceManager
+
 import android.util.Log
 import android.view.ContextMenu
 import android.view.Menu
@@ -49,20 +48,16 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 
 	private val TAG = TrackManager::class.java.simpleName
 
-	private val RC_WRITE_STORAGE_DISPLAY_TRACK = 3
-	private val RC_WRITE_PERMISSIONS_EXPORT_ALL = 1
 	private val RC_WRITE_PERMISSIONS_EXPORT_ONE = 2
 	private val RC_GPS_PERMISSION = 5
 	private val RC_WRITE_PERMISSIONS_SHARE = 6
-
-	private val PREV_VISIBLE = "prev_visible"
 
 	private val TRACK_ID_NO_TRACK: Long = -1
 
 	private var currentTrackId: Long = TRACK_ID_NO_TRACK
 	private var contextMenuSelectedTrackid: Long = TRACK_ID_NO_TRACK
-	private var prevItemVisible = -1
-	private var TrackLoggerStartIntent: Intent? = null
+
+
 	private lateinit var recyclerViewAdapter: TrackListRVAdapter
 	private var hasDivider = false
 	
@@ -74,9 +69,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		setContentView(R.layout.trackmanager)
 		val myToolbar = findViewById<Toolbar>(R.id.my_toolbar)
 		setSupportActionBar(myToolbar)
-		if (savedInstanceState != null) {
-			prevItemVisible = savedInstanceState.getInt(PREV_VISIBLE, -1)
-		}
+
 		val fab = findViewById<FloatingActionButton>(R.id.trackmgr_fab)
 		fab.setOnClickListener {
 			startNewTrack()
@@ -104,6 +97,8 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		super.onResume()
 		// Register ContentObserver
 		contentResolver.registerContentObserver(TrackContentProvider.CONTENT_URI_TRACK, true, trackContentObserver)
+		// Update current track ID from database
+		currentTrackId = getActiveTrackId()
 		updateTrackListAndUI()
 	}
 
@@ -116,7 +111,6 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 	private fun updateTrackListAndUI() {
 		setRecyclerView()
 		updateEmptyView()
-		updateCurrentTrackId()
 		invalidateOptionsMenu() // Update menu items
 	}
 
@@ -126,13 +120,6 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 			emptyView.visibility = View.VISIBLE
 		} else {
 			emptyView.visibility = View.INVISIBLE
-		}
-	}
-
-	private fun updateCurrentTrackId() {
-		currentTrackId = DataHelper.getActiveTrackId(contentResolver)
-		if (currentTrackId != TRACK_ID_NO_TRACK) {
-			Snackbar.make(findViewById(R.id.trackmgr_fab), resources.getString(R.string.trackmgr_continuetrack_hint).replace("{0}", java.lang.Long.toString(currentTrackId)), Snackbar.LENGTH_LONG).setAction("Action", null).show()
 		}
 	}
 
@@ -151,15 +138,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		recyclerView.adapter = recyclerViewAdapter
 	}
 
-	override fun onSaveInstanceState(outState: Bundle) {
-		super.onSaveInstanceState(outState)
-		outState.putInt(PREV_VISIBLE, prevItemVisible)
-	}
 
-	override fun onRestoreInstanceState(state: Bundle) {
-		super.onRestoreInstanceState(state)
-		prevItemVisible = state.getInt(PREV_VISIBLE, -1)
-	}
 
 	override fun onCreateOptionsMenu(menu: Menu): Boolean {
 		menuInflater.inflate(R.menu.trackmgr_menu, menu)
@@ -167,7 +146,8 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 	}
 
 	override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-		if (currentTrackId != -1L) {
+		val activeTrackId = getActiveTrackId()
+		if (activeTrackId != TRACK_ID_NO_TRACK) {
 			menu.findItem(R.id.trackmgr_menu_continuetrack).isVisible = true
 			menu.findItem(R.id.trackmgr_menu_stopcurrenttrack).isVisible = true
 		} else {
@@ -176,7 +156,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		}
 		val tracksCount = recyclerViewAdapter.itemCount
 		menu.findItem(R.id.trackmgr_menu_deletetracks).isVisible = tracksCount > 0
-		menu.findItem(R.id.trackmgr_menu_exportall).isVisible = tracksCount > 0
+
 		return super.onPrepareOptionsMenu(menu)
 	}
 
@@ -227,10 +207,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				}
 				.setNegativeButton(android.R.string.cancel) { dialog: DialogInterface, _: Int -> dialog.cancel() }
 				.create().show()
-			R.id.trackmgr_menu_exportall -> if (!writeExternalStoragePermissionGranted()) {
-				Log.e(TAG, "ExportAllWrite - Permission asked")
-				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_PERMISSIONS_EXPORT_ALL)
-			} else exportTracks(false)
+
 			R.id.trackmgr_menu_settings -> startActivity(Intent(this, Preferences::class.java))
 			// About 기능 제거됨
 		}
@@ -276,22 +253,11 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		}
 	}
 
-	private fun exportTracks(onlyContextMenuSelectedTrack: Boolean) {
-		var trackIds: LongArray? = null
-		if (onlyContextMenuSelectedTrack) {
-			trackIds = LongArray(1)
-			trackIds[0] = contextMenuSelectedTrackid
-		} else {
-			val cursor = contentResolver.query(TrackContentProvider.CONTENT_URI_TRACK, null, null, null, TrackContentProvider.Schema.COL_START_DATE + " desc")
-			if (cursor != null && cursor.moveToFirst()) {
-				trackIds = LongArray(cursor.count)
-				val idCol = cursor.getColumnIndex(TrackContentProvider.Schema.COL_ID)
-				var i = 0
-				do { trackIds[i++] = cursor.getLong(idCol) } while (cursor.moveToNext())
-			}
-			cursor?.close()
-		}
-		object : ExportToStorageTask(this@TrackManager, *trackIds!!) {
+	private fun exportTracks(trackId: Long) {
+		val trackIds = LongArray(1)
+		trackIds[0] = trackId
+		
+		object : ExportToStorageTask(this@TrackManager, *trackIds) {
 			override fun onPostExecute(success: Boolean) {
 				if (getExportDialog() != null) getExportDialog()!!.dismiss()
 				if (!success) {
@@ -312,14 +278,23 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		super.onCreateContextMenu(menu, v, menuInfo)
 		menuInflater.inflate(R.menu.trackmgr_contextmenu, menu)
 		contextMenuSelectedTrackid = trackId
+		
+		// 현재 활성 트랙 ID를 DB에서 가져오기
+		val activeTrackId = getActiveTrackId()
+		
 		menu.setHeaderTitle(resources.getString(R.string.trackmgr_contextmenu_title).replace("{0}", java.lang.Long.toString(contextMenuSelectedTrackid)))
-		if (currentTrackId == contextMenuSelectedTrackid) {
+		
+		// Stop 메뉴 항목 표시/숨김 처리
+		if (activeTrackId == contextMenuSelectedTrackid) {
 			menu.findItem(R.id.trackmgr_contextmenu_stop).isVisible = true
+			menu.findItem(R.id.trackmgr_contextmenu_resume).isVisible = false
 		} else {
 			menu.findItem(R.id.trackmgr_contextmenu_stop).isVisible = false
+			menu.findItem(R.id.trackmgr_contextmenu_resume).isVisible = true
 		}
-		menu.setHeaderTitle(resources.getString(R.string.trackmgr_contextmenu_title).replace("{0}", java.lang.Long.toString(contextMenuSelectedTrackid)))
-		if (currentTrackId == contextMenuSelectedTrackid) {
+		
+		// 활성 트랙은 삭제 불가
+		if (activeTrackId == contextMenuSelectedTrackid) {
 			menu.removeItem(R.id.trackmgr_contextmenu_delete)
 		}
 	}
@@ -375,7 +350,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				.setNegativeButton(android.R.string.cancel) { dialog: DialogInterface, _: Int -> dialog.cancel() }
 				.create().show()
 			R.id.trackmgr_contextmenu_export -> if (writeExternalStoragePermissionGranted()) { 
-				exportTracks(true)
+				exportTracks(contextMenuSelectedTrackid)
 				// Update UI immediately after export
 				updateTrackListAndUI()
 			} else {
@@ -390,25 +365,13 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				Log.e(TAG, "Share GPX - Permission asked")
 				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_PERMISSIONS_SHARE)
 			}
-			R.id.trackmgr_contextmenu_display -> if (writeExternalStoragePermissionGranted()) { 
-				displayTrack(contextMenuSelectedTrackid)
-				// Update UI immediately after display
-				updateTrackListAndUI()
-			} else {
-				Log.e(TAG, "DisplayTrackMapWrite - Permission asked")
-				ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), RC_WRITE_STORAGE_DISPLAY_TRACK)
-			}
+
 
 		}
 		return super.onContextItemSelected(item)
 	}
 
-	private fun displayTrack(trackId: Long) {
-		Log.e(TAG, "On Display Track")
-		val i = Intent(this, DisplayTrack::class.java)
-		i.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, trackId)
-		startActivity(i)
-	}
+
 
 	private fun writeExternalStoragePermissionGranted(): Boolean {
 		return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -476,9 +439,28 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		}
 	}
 
-    private fun updateTrackItemsInRecyclerView() {
+    	private fun updateTrackItemsInRecyclerView() {
         // Use the comprehensive update method instead of just cursor requery
         updateTrackListAndUI()
+    }
+    
+    private fun getActiveTrackId(): Long {
+        val cursor = contentResolver.query(
+            TrackContentProvider.CONTENT_URI_TRACK,
+            arrayOf(TrackContentProvider.Schema.COL_ID),
+            "${TrackContentProvider.Schema.COL_ACTIVE} = ?",
+            arrayOf(TrackContentProvider.Schema.VAL_TRACK_ACTIVE.toString()),
+            null
+        )
+        
+        return if (cursor != null && cursor.moveToFirst()) {
+            val trackId = cursor.getLong(cursor.getColumnIndex(TrackContentProvider.Schema.COL_ID))
+            cursor.close()
+            trackId
+        } else {
+            cursor?.close()
+            TRACK_ID_NO_TRACK
+        }
     }
 
 	private fun deleteAllTracks() {
@@ -497,13 +479,15 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		val values = ContentValues()
 		values.put(TrackContentProvider.Schema.COL_ACTIVE, TrackContentProvider.Schema.VAL_TRACK_ACTIVE)
 		contentResolver.update(TrackContentProvider.CONTENT_URI_TRACK, values, TrackContentProvider.Schema.COL_ID + " = ?", arrayOf(java.lang.Long.toString(trackId)))
+		currentTrackId = trackId
 		// Update UI immediately
 		updateTrackListAndUI()
 	}
 
 	private fun stopActiveTrack() {
-		if (currentTrackId != TRACK_ID_NO_TRACK) {
-			Log.d(TAG, "Stopping active track #$currentTrackId")
+		val activeTrackId = getActiveTrackId()
+		if (activeTrackId != TRACK_ID_NO_TRACK) {
+			Log.d(TAG, "Stopping active track #$activeTrackId")
 			
 			try {
 				// BroadcastReceiver에 stop 신호 전송
@@ -513,7 +497,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 				
 				// DB에서 트랙 비활성화
 				val dataHelper = DataHelper(this)
-				dataHelper.stopTracking(currentTrackId)
+				dataHelper.stopTracking(activeTrackId)
 				
 				// Service 정지 (안전하게)
 				try {
@@ -534,19 +518,13 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 
 	override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
 		when (requestCode) {
-			RC_WRITE_PERMISSIONS_EXPORT_ALL -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { exportTracks(false) } else {
-				Log.w(TAG, "we should explain why we need write permission_EXPORT_ALL")
-				Toast.makeText(this, R.string.storage_permission_for_export_GPX, Toast.LENGTH_LONG).show()
-			}
-			RC_WRITE_PERMISSIONS_EXPORT_ONE -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { exportTracks(true) } else {
+
+			RC_WRITE_PERMISSIONS_EXPORT_ONE -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { exportTracks(contextMenuSelectedTrackid) } else {
 				Log.w(TAG, "we should explain why we need write permission_EXPORT_ONE")
 				Toast.makeText(this, R.string.storage_permission_for_export_GPX, Toast.LENGTH_LONG).show()
 			}
-			RC_WRITE_STORAGE_DISPLAY_TRACK -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { Log.e(TAG, "Result - Permission granted"); displayTrack(contextMenuSelectedTrackid) } else {
-				Log.w(TAG, "Permission not granted")
-				Toast.makeText(this, R.string.storage_permission_for_display_track, Toast.LENGTH_LONG).show()
-			}
-			RC_WRITE_PERMISSIONS_SHARE -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { Log.e(TAG, "Result - Permission granted"); displayTrack(contextMenuSelectedTrackid); prepareAndShareTrack(contextMenuSelectedTrackid, this) } else {
+
+			RC_WRITE_PERMISSIONS_SHARE -> if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { Log.e(TAG, "Result - Permission granted"); prepareAndShareTrack(contextMenuSelectedTrackid, this) } else {
 				Log.w(TAG, "Permission not granted")
 				Toast.makeText(this, R.string.storage_permission_for_share_track, Toast.LENGTH_LONG).show()
 			}

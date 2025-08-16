@@ -7,9 +7,7 @@
     <item
         android:id="@+id/trackmgr_contextmenu_resume"
         android:title="@string/trackmgr_contextmenu_resume" />
-    <item
-        android:id="@+id/trackmgr_contextmenu_display"
-        android:title="@string/trackmgr_contextmenu_display" />
+
 
     <item
         android:id="@+id/trackmgr_contextmenu_export"

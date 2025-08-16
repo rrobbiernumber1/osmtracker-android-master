@@ -100,11 +100,7 @@
 			android:summary="@string/prefs_theme_summary"
 			android:defaultValue="@style/DefaultTheme" />
 		
-		<CheckBoxPreference
-			android:key="ui.displaytrack.osm"
-			android:title="@string/prefs_displaytrack_osm"
-			android:summary="@string/prefs_displaytrack_osm_summary"
-			android:defaultValue="false" />
+
 		<ListPreference
 			android:defaultValue="none"
 			android:key="ui.orientation"

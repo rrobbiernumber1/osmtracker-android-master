@@ -49,9 +49,7 @@
 
 
 
-        <activity
-            android:name=".activity.DisplayTrack"
-            android:label="@string/displaytrack" />
+
 
         <service
             android:name=".service.gps.GPSLogger"

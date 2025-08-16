@@ -43,6 +43,14 @@ class GPSLogger : Service(), LocationListener {
 	private var gpsLoggingInterval: Long = 0
 	private var gpsLoggingMinDistance: Long = 0
 	
+	// 실시간 통계 변수
+	private var trackStartTime: Long = 0
+	private var totalTime: Long = 0
+	private var movingTime: Long = 0
+	private var elevationGain: Double = 0.0
+	private var lastElevation: Double = 0.0
+	private var activityType: String = "Walking"
+	
 	// Timer for periodic tracking even when GPS signal is weak
 	private var trackingTimer: android.os.Handler? = null
 	private var trackingRunnable: Runnable? = null
@@ -222,6 +230,12 @@ class GPSLogger : Service(), LocationListener {
 
 	private fun startTracking(trackId: Long) {
 		currentTrackId = trackId
+		trackStartTime = System.currentTimeMillis()
+		totalTime = 0
+		movingTime = 0
+		elevationGain = 0.0
+		lastElevation = 0.0
+		
 		Log.d(TAG, "Starting track logging for track #$trackId")
 		val nmgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 		nmgr.notify(NOTIFICATION_ID, notification)
@@ -235,6 +249,7 @@ class GPSLogger : Service(), LocationListener {
 					Log.d(TAG, "Recording initial last known location for track #$trackId")
 					dataHelper.track(trackId, lastKnownLocation)
 					lastLocation = lastKnownLocation
+					lastElevation = lastKnownLocation.altitude
 				} else {
 					Log.d(TAG, "No last known location available, creating indoor entry for track #$trackId")
 					createIndoorLocationEntry()
@@ -337,8 +352,36 @@ class GPSLogger : Service(), LocationListener {
 			if (lastGPSTimestamp + gpsLoggingInterval < System.currentTimeMillis()) {
 				lastGPSTimestamp = System.currentTimeMillis()
 				dataHelper.track(currentTrackId, location)
+				
+				// 실시간 통계 업데이트
+				updateRealtimeStats(location)
 			}
 		}
+	}
+	
+	private fun updateRealtimeStats(location: Location) {
+		// 총 시간 계산
+		totalTime = (System.currentTimeMillis() - trackStartTime) / 1000
+		movingTime = totalTime // 요청에 따라 이동 시간을 총 시간과 동일하게 설정
+		
+		// 고도 상승 계산
+		if (location.hasAltitude() && lastElevation > 0) {
+			val elevationDiff = location.altitude - lastElevation
+			if (elevationDiff > 0) {
+				elevationGain += elevationDiff
+			}
+			lastElevation = location.altitude
+		}
+		
+		// DB에 실시간 통계 업데이트
+		DataHelper.updateTrackRealtimeStats(
+			currentTrackId, 
+			totalTime, 
+			movingTime, 
+			elevationGain, 
+			activityType, 
+			contentResolver
+		)
 	}
 
 	private val notification: Notification

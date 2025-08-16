@@ -31,7 +31,7 @@
     <string name="trackmgr_contextmenu_export">Export</string>
     <string name="trackmgr_contextmenu_share">Share</string>
     
-    <string name="trackmgr_contextmenu_display">Display</string>
+
 
     <string name="trackmgr_contextmenu_title">Track #{0}</string>
     <string name="trackmgr_delete_confirm">Track #{0} will be deleted</string>
@@ -63,7 +63,7 @@
     <!-- Menu -->
     <string name="menu_settings">Settings</string>
     <!-- About removed -->
-    <string name="menu_displaytrack">Display track</string>
+
     <string name="menu_deletetracks">Delete all tracks</string>
     <string name="menu_continue">Continue track</string>
     <string name="menu_stopcurrenttrack">Stop current track</string>
@@ -72,7 +72,7 @@
     <string name="menu_export">Export as GPX</string>
     
     <string name="menu_center_to_gps">Center to GPS</string>
-    <string name="menu_exportall">Export all as GPX</string>
+
 
     <!-- Errors -->
     <string name="error_externalstorage_not_writable">Unable to write to external storage.</string>
@@ -81,7 +81,7 @@
     <!-- messages -->
     <string name="permission_required">Permission required</string>
     <string name="storage_permission_for_export_GPX">To export the GPX trace we need to write on the storage.</string>
-    <string name="storage_permission_for_display_track">To display the track properly we need access to the storage.</string>
+
     <string name="storage_permission_for_share_track">To share the track properly we need access to the storage.</string>
     
     <string name="acccept">Accept</string>
@@ -97,10 +97,7 @@
     <string name="notification_title">OSMTracker is tracking (#{0})</string>
     <string name="notification_text">Tap here to display main screen</string>
 
-    <!-- Display track -->
-    <string name="displaytrack">Display track</string>
-    <string name="displaytrack_map">Display background map</string>
-    <string name="displaytrack_north">N</string>
+
 
 
 
@@ -114,8 +111,7 @@
     <string name="various_heading_unknown">Heading can\'t be determined</string>
     <string name="various_export_finished">Export process finished successfully</string>
 
-    <!-- OSM map view -->
-    <string name="displaytrackmap">OpenStreetMap track display</string>
+
 
     
 
