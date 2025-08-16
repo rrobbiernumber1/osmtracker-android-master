@@ -5,7 +5,7 @@ import android.preference.PreferenceManager
 import android.util.Log
 import net.osmtracker.OSMTracker
 import net.osmtracker.db.DataHelper
-import net.osmtracker.exception.ExportTrackException
+
 import java.io.File
 import java.util.Date
 
@@ -32,7 +32,7 @@ abstract class ExportToTempFileTask(context: Context, trackId: Long) : ExportTra
 		}
 	}
 
-	@Throws(ExportTrackException::class)
+
 	override fun getExportDirectory(startDate: Date): File = tmpFile.parentFile ?: tmpFile.parentFile
 
 	public override fun buildGPXFilename(c: android.database.Cursor, parentDirectory: File): String {

@@ -1,6 +1,7 @@
 package net.osmtracker.activity
 
 import android.content.Context
+import android.database.Cursor
 import android.view.ContextMenu
 import android.view.LayoutInflater
 import android.view.View
@@ -10,17 +11,14 @@ import android.widget.TextView
 import androidx.annotation.NonNull
 import androidx.recyclerview.widget.RecyclerView
 import net.osmtracker.R
-import net.osmtracker.db.TracklistAdapter
+import net.osmtracker.db.TrackContentProvider
+import net.osmtracker.db.model.Track
 
 class TrackListRVAdapter(
 	private val context: Context,
-	cursor: android.database.Cursor,
+	private val cursor: Cursor,
 	private val mHandler: TrackListRecyclerViewAdapterListener
 ) : RecyclerView.Adapter<TrackListRVAdapter.TrackItemVH>() {
-
-	private val cursorAdapter: TracklistAdapter = TracklistAdapter(context, cursor)
-
-	internal fun getCursorAdapter(): TracklistAdapter = cursorAdapter
 
 	interface TrackListRecyclerViewAdapterListener {
 		fun onClick(trackId: Long)
@@ -46,7 +44,6 @@ class TrackListRVAdapter(
 		fun getvTps(): TextView { return vTps }
 		fun getvStatus(): ImageView { return vStatus }
         
-
 		override fun onClick(v: View) {
 			val trackId = java.lang.Long.parseLong(getvId().text.toString())
 			mHandler.onClick(trackId)
@@ -64,13 +61,43 @@ class TrackListRVAdapter(
 	}
 
 	override fun onBindViewHolder(@NonNull holder: TrackItemVH, position: Int) {
-		cursorAdapter.cursor.moveToPosition(position)
-		cursorAdapter.bindView(holder.itemView, context, cursorAdapter.cursor)
+		cursor.moveToPosition(position)
+		bindView(holder.itemView, context, cursor)
 	}
 
 	override fun getItemCount(): Int {
-		return cursorAdapter.count
+		return cursor.count
 	}
+
+	private fun bindView(view: View, context: Context, cursor: Cursor): View {
+		val vId = view.findViewById<TextView>(R.id.trackmgr_item_id)
+		val vNameOrStartDate = view.findViewById<TextView>(R.id.trackmgr_item_nameordate)
+		val vWps = view.findViewById<TextView>(R.id.trackmgr_item_wps)
+		val vTps = view.findViewById<TextView>(R.id.trackmgr_item_tps)
+		val vStatus = view.findViewById<ImageView>(R.id.trackmgr_item_statusicon)
+		
+		val active = cursor.getInt(cursor.getColumnIndex(TrackContentProvider.Schema.COL_ACTIVE))
+		if (TrackContentProvider.Schema.VAL_TRACK_ACTIVE == active) {
+			vStatus.setImageResource(android.R.drawable.presence_away)
+			vStatus.visibility = View.VISIBLE
+		} else if (cursor.isNull(cursor.getColumnIndex(TrackContentProvider.Schema.COL_EXPORT_DATE))) {
+			vStatus.visibility = View.GONE
+		} else {
+			vStatus.setImageResource(android.R.drawable.presence_online)
+			vStatus.visibility = View.VISIBLE
+		}
+		
+		val trackId = cursor.getLong(cursor.getColumnIndex(TrackContentProvider.Schema.COL_ID))
+		val strTrackId = java.lang.Long.toString(trackId)
+		vId.text = strTrackId
+		val t = Track.build(trackId, cursor, context.contentResolver, false)
+		vTps.text = Integer.toString(t.getTpCount())
+		vWps.text = Integer.toString(t.getWpCount())
+		vNameOrStartDate.text = t.getDisplayName()
+		return view
+	}
+
+	fun getCursor(): Cursor = cursor
 }
 
 

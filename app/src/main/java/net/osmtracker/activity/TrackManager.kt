@@ -34,10 +34,10 @@ import net.osmtracker.OSMTracker
 import net.osmtracker.R
 import net.osmtracker.db.DataHelper
 import net.osmtracker.db.TrackContentProvider
-import net.osmtracker.exception.CreateTrackException
+
 import net.osmtracker.gpx.ExportToStorageTask
 import net.osmtracker.gpx.ExportToTempFileTask
-import net.osmtracker.gpx.ZipHelper
+
 import net.osmtracker.util.FileSystemUtils
 import java.io.File
 import java.util.Date
@@ -182,8 +182,8 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 			intent.putExtra(TrackContentProvider.Schema.COL_TRACK_ID, currentTrackId)
 			intent.setPackage(this.packageName)
 			sendBroadcast(intent)
-		} catch (cte: CreateTrackException) {
-			Toast.makeText(this, resources.getString(R.string.trackmgr_newtrack_error).replace("{0}", cte.message ?: ""), Toast.LENGTH_LONG).show()
+		} catch (e: Exception) {
+			Toast.makeText(this, resources.getString(R.string.trackmgr_newtrack_error).replace("{0}", e.message ?: ""), Toast.LENGTH_LONG).show()
 		}
 	}
 
@@ -292,7 +292,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		// TrackDetail 기능 제거됨 - 트랙 클릭 시 아무 동작 안함
 	}
 
-	@Throws(CreateTrackException::class)
+
 	private fun createNewTrack(): Long {
 		val startDate = Date()
 		val values = ContentValues()
@@ -309,10 +309,7 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 		object : ExportToTempFileTask(context, trackId) {
 			override fun executionCompleted() {
 				val tmp = this.getTmpFile()
-				val zipFile = ZipHelper.zipCacheFiles(context, trackId, tmp)
-				if (zipFile != null) {
-					shareFile(zipFile, context)
-				}
+				shareFile(tmp, context)
 			}
 			override fun onPostExecute(success: Boolean) {
 				if (getExportDialog() != null) getExportDialog()!!.dismiss()
@@ -349,8 +346,8 @@ class TrackManager : AppCompatActivity(), TrackListRVAdapter.TrackListRecyclerVi
 	}
 
     private fun updateTrackItemsInRecyclerView() {
-        val cursorAdapter = recyclerViewAdapter.getCursorAdapter()
-        cursorAdapter.cursor.requery()
+        val cursor = recyclerViewAdapter.getCursor()
+        cursor.requery()
         recyclerViewAdapter.notifyDataSetChanged()
     }
 

@@ -16,7 +16,7 @@ import net.osmtracker.OSMTracker
 import net.osmtracker.R
 import net.osmtracker.db.DataHelper
 import net.osmtracker.db.TrackContentProvider
-import net.osmtracker.exception.ExportTrackException
+
 import net.osmtracker.util.FileSystemUtils
 import java.io.BufferedWriter
 import java.io.File
@@ -40,7 +40,6 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
         pointDateFormatter.timeZone = TimeZone.getTimeZone("UTC")
     }
 
-    @Throws(ExportTrackException::class)
     protected abstract fun getExportDirectory(startDate: Date): File
     protected abstract fun exportMediaFiles(): Boolean
     protected abstract fun updateExportDate(): Boolean
@@ -59,8 +58,8 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
         return try {
             for (trackId in trackIds) exportTrackAsGpx(trackId)
             true
-        } catch (ete: ExportTrackException) {
-            errorMsg = ete.message
+        } catch (e: Exception) {
+            errorMsg = e.message
             false
         }
     }
@@ -100,7 +99,6 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
         }
     }
 
-    @Throws(ExportTrackException::class)
     protected fun exportTrackAsGpx(trackId: Long) {
         val cr: ContentResolver = context.contentResolver
         val c = context.contentResolver.query(
@@ -125,10 +123,9 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
             publishProgress(trackId, cTrackPoints.count.toLong(), cWayPoints.count.toLong())
             try {
                 writeGpxFile(trackName, tags, trackDescription, cTrackPoints, cWayPoints, trackFile)
-                if (exportMediaFiles()) copyWaypointFiles(trackId, trackGPXExportDirectory)
                 if (updateExportDate()) DataHelper.setTrackExportDate(trackId, System.currentTimeMillis(), cr)
             } catch (ioe: IOException) {
-                throw ExportTrackException(ioe.message ?: "")
+                throw RuntimeException(ioe.message ?: "")
             } finally {
                 cTrackPoints.close()
                 cWayPoints.close()
@@ -300,13 +297,7 @@ abstract class ExportTrackTask(protected var context: Context, vararg trackIds: 
     @JvmName("getExportDialog")
     fun getExportDialog(): ProgressDialog? = dialog
 
-    private fun copyWaypointFiles(trackId: Long, gpxOutputDirectory: File) {
-        val trackDir = DataHelper.getTrackDirectory(trackId, context)
-        if (trackDir != null) {
-            Log.v(TAG, "Copying files from the standard TrackDir [$trackDir] to the export directory [$gpxOutputDirectory]")
-            FileSystemUtils.copyDirectoryContents(gpxOutputDirectory, trackDir)
-        }
-    }
+
 
     companion object {
         private const val TAG = "ExportTrackTask"

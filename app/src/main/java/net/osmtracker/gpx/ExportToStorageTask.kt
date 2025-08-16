@@ -9,7 +9,7 @@ import net.osmtracker.OSMTracker
 import net.osmtracker.R
 import net.osmtracker.db.DataHelper
 import net.osmtracker.db.model.Track
-import net.osmtracker.exception.ExportTrackException
+
 import net.osmtracker.util.FileSystemUtils.getUniqueChildNameFor
 import java.io.File
 import java.util.Date
@@ -31,7 +31,7 @@ open class ExportToStorageTask(context: Context, private val dataHelper: DataHel
 			finalExportDirectory = File(finalExportDirectory, uniqueFolderName)
 			finalExportDirectory.mkdirs()
 		}
-		if (!finalExportDirectory.exists()) throw ExportTrackException(ERROR_MESSAGE)
+		if (!finalExportDirectory.exists()) throw RuntimeException(ERROR_MESSAGE)
 		return finalExportDirectory
 	}
 
@@ -53,11 +53,11 @@ open class ExportToStorageTask(context: Context, private val dataHelper: DataHel
 
 	private fun isExternalStorageWritable(): Boolean = Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
 
-	@get:Throws(ExportTrackException::class)
+
 	val baseExportDirectory: File
 		get() {
 			if (!isExternalStorageWritable()) {
-				throw ExportTrackException(context.resources.getString(R.string.error_externalstorage_not_writable))
+				throw RuntimeException(context.resources.getString(R.string.error_externalstorage_not_writable))
 			}
 			ensurePrefs()
 			val exportDirectoryNameInPreferences = sharedPreferences!!.getString(
@@ -72,7 +72,7 @@ open class ExportToStorageTask(context: Context, private val dataHelper: DataHel
 			if (!baseExportDirectory.exists()) {
 				val ok = baseExportDirectory.mkdirs()
 				if (!ok) {
-					throw ExportTrackException(context.resources.getString(R.string.error_externalstorage_not_writable))
+					throw RuntimeException(context.resources.getString(R.string.error_externalstorage_not_writable))
 				}
 			}
 			Log.d(TAG, "BaseExportDirectory: ${baseExportDirectory.absolutePath}")
@@ -85,7 +85,7 @@ open class ExportToStorageTask(context: Context, private val dataHelper: DataHel
 		}
 	}
 
-	override fun exportMediaFiles(): Boolean = true
+	override fun exportMediaFiles(): Boolean = false
 
 	override fun updateExportDate(): Boolean = true
 
